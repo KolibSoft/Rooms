@@ -1,6 +1,6 @@
 namespace KolibSoft.Rooms.Web;
 
-public class Message
+public class RoomMessage
 {
 
     public Dictionary<string, string> Headers { get; } = new();
@@ -12,9 +12,9 @@ public class Message
         return @string;
     }
 
-    public static Message Parse(string @string)
+    public static RoomMessage Parse(string @string)
     {
-        var message = new Message();
+        var message = new RoomMessage();
         var message_split = @string.Split("\n\n");
         if (message_split.Length != 2)
             throw new FormatException("Message body and headers are required");
