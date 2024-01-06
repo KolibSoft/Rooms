@@ -6,34 +6,33 @@ namespace KolibSoft.Rooms.Web;
 public class RoomSocket
 {
 
-    public int MaxMessageSize { get; }
+    public byte[] Buffer { get; }
     public WebSocket Socket { get; }
     public bool IsAlive => Socket.State == WebSocketState.Open;
 
-    public RoomSocket(WebSocket socket, int maxMessageSize = 1024 * 1024)
+    public RoomSocket(WebSocket socket, int bufferSize = 1024 * 1024)
     {
+        Buffer = new byte[bufferSize];
         Socket = socket;
-        MaxMessageSize = maxMessageSize;
     }
 
     public async Task SendAsync(RoomMessage message)
     {
         var @string = message.ToString();
-        if (Encoding.UTF8.GetByteCount(@string) > MaxMessageSize)
+        if (Encoding.UTF8.GetByteCount(@string) > Buffer.Length)
             throw new ApplicationException("Message is too large");
-        var bytes = Encoding.UTF8.GetBytes(@string);
-        await Socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+        var count = Encoding.UTF8.GetBytes(@string, Buffer);
+        await Socket.SendAsync(new ArraySegment<byte>(Buffer, 0, count), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     public async Task<RoomMessage?> ReceiveAsync()
     {
-        var bytes = new byte[MaxMessageSize];
-        var result = await Socket.ReceiveAsync(bytes, CancellationToken.None);
+        var result = await Socket.ReceiveAsync(Buffer, CancellationToken.None);
         if (!result.EndOfMessage)
             throw new ApplicationException("Message is too large");
         if (result.MessageType == WebSocketMessageType.Text)
         {
-            var @string = Encoding.UTF8.GetString(bytes, 0, result.Count);
+            var @string = Encoding.UTF8.GetString(Buffer, 0, result.Count);
             var message = RoomMessage.Parse(@string);
             return message;
         }
