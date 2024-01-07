@@ -12,13 +12,9 @@ public class RoomController : ControllerBase
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            var socket = new RoomSocket(await HttpContext.WebSockets.AcceptWebSocketAsync());
-            while (socket.IsAlive)
-            {
-                var message = await socket.ReceiveAsync();
-                if (message != null)
-                    await socket.SendAsync(message);
-            }
+            var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            var socket = new RoomSocket(wsocket);
+            await Room.Shared.Listen(socket);
         }
     }
 
