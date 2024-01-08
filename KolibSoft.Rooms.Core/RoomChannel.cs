@@ -3,7 +3,7 @@ using System.Text;
 
 namespace KolibSoft.Rooms.Core;
 
-public struct RoomIdentifier(ArraySegment<byte> data)
+public struct RoomChannel(ArraySegment<byte> data)
 {
 
     public ArraySegment<byte> Data { get; } = data;
@@ -18,7 +18,7 @@ public struct RoomIdentifier(ArraySegment<byte> data)
         if (obj == null || GetType() != obj.GetType())
             return false;
 
-        var other = (RoomIdentifier)obj;
+        var other = (RoomChannel)obj;
         return this == other;
     }
 
@@ -27,24 +27,24 @@ public struct RoomIdentifier(ArraySegment<byte> data)
         return Data.GetHashCode();
     }
 
-    public static RoomIdentifier Parse(string @string)
+    public static RoomChannel Parse(string @string)
     {
         if (@string.Length != 8 || @string.Any(x => !char.IsDigit(x)))
             throw new FormatException();
         var data = Encoding.UTF8.GetBytes(@string);
-        return new RoomIdentifier(data);
+        return new RoomChannel(data);
     }
 
-    public static bool operator ==(RoomIdentifier lhs, RoomIdentifier rhs)
+    public static bool operator ==(RoomChannel lhs, RoomChannel rhs)
     {
         return lhs.Data.SequenceEqual(rhs.Data);
     }
 
-    public static bool operator !=(RoomIdentifier lhs, RoomIdentifier rhs)
+    public static bool operator !=(RoomChannel lhs, RoomChannel rhs)
     {
         return !lhs.Data.SequenceEqual(rhs.Data);
     }
 
-    public static readonly RoomIdentifier None = RoomIdentifier.Parse("00000000");
+    public static readonly RoomChannel None = RoomChannel.Parse("00000000");
 
 }
