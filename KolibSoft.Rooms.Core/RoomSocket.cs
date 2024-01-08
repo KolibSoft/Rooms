@@ -2,10 +2,35 @@ using System.Net.WebSockets;
 
 namespace KolibSoft.Rooms.Core;
 
-public class RoomSocket(WebSocket socket)
+public class RoomSocket(WebSocket socket, int bufferingSize = 1024)
 {
 
     public WebSocket Socket { get; } = socket;
     public bool IsAlive => Socket.State == WebSocketState.Open;
+    public ArraySegment<byte> SendBuffer { get; } = new byte[bufferingSize];
+    public ArraySegment<byte> ReceiveBuffer { get; } = new byte[bufferingSize];
+
+    public async Task SendAsync(RoomMessage message)
+    {
+        message.CopyTo(SendBuffer);
+        var data = SendBuffer.Slice(0, message.Length);
+        await Socket.SendAsync(data, WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public async Task<RoomMessage?> ReceiveAsync()
+    {
+        var result = await Socket.ReceiveAsync(ReceiveBuffer, CancellationToken.None);
+        if (result.MessageType == WebSocketMessageType.Text)
+        {
+            var data = ReceiveBuffer.Slice(0, result.Count);
+            var message = new RoomMessage(data.ToArray());
+            return message;
+        }
+        else
+        {
+            await Socket.CloseOutputAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
+            return null;
+        }
+    }
 
 }

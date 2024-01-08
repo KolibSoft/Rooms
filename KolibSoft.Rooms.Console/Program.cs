@@ -24,7 +24,4 @@ message = new RoomMessage()
     Channel = RoomChannel.Parse("87654321"),
     Content = RoomContent.Parse("Reason: Hacker")
 };
-var buffer = new RoomBuffer();
-buffer.SetMessage(message);
-Console.WriteLine(buffer.GetMessage());
 
