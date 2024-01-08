@@ -7,22 +7,19 @@ namespace KolibSoft.Rooms.Web;
 public class RoomController : ControllerBase
 {
 
-    public static Room Room { get; }
-
-    static RoomController()
-    {
-        Room = new Room();
-        _ = Room.RunAsync();
-    }
+    public static List<(int code, int slots, string? pass, string? tag, RoomHub hub)> Rooms { get; } = new();
 
     [HttpGet]
-    public async Task ConnectAsync()
+    public async Task ConnectAsync(int? code = null, string? pass = null)
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            var socket = new RoomSocket(wsocket);
-            await Room.ListenAsync(socket);
+            var room = Rooms.Where(x => x.code == code && x.hub.Sockets.Length < x.slots && x.pass == pass);
+            if (room != null)
+            {
+                var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                
+            }
         }
     }
 

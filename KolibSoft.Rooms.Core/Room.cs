@@ -1,48 +1,27 @@
-using System.Collections.Concurrent;
-
 namespace KolibSoft.Rooms.Core;
 
-public class Room
+public class Room(int code, int slots = 4, string? pass = null, string? tag = null)
 {
 
-    public RoomSocket[] Sockets { get; private set; } = Array.Empty<RoomSocket>();
+    public int Code { get; } = code;
+    public int Slots { get; } = slots;
+    public string? Pass { get; } = pass;
+    public string? Tag { get; } = tag;
 
-    public ConcurrentQueue<(int id, RoomMessage)> Messages { get; } = new();
+    public RoomHub Hub { get; } = new();
 
-    public async Task ListenAsync(RoomSocket socket)
+    public async Task JoinAsync(RoomSocket socket, string? pass)
     {
-        Sockets = Sockets.Append(socket).ToArray();
-        while (socket.IsAlive)
-        {
-            var message = await socket.ReceiveAsync();
-            if (message != null)
-                Messages.Enqueue((socket.GetHashCode(), message));
-        }
-        Sockets = Sockets.Where(x => x != socket).ToArray();
-    }
-
-    public async Task TransmitAsync()
-    {
-        while (Sockets.Any())
-        {
-            if (Messages.TryDequeue(out (int id, RoomMessage message) message))
-                foreach (var socket in Sockets)
-                    try
-                    {
-                        var channel = message.id ^ socket.GetHashCode();
-                        message.message.Channel = RoomChannel.Parse($"{channel:D8}");
-                        await socket.SendAsync(message.message);
-                    }
-                    catch { }
-            else await Task.Delay(100);
-        }
+        if (Hub.Sockets.Length >= Slots || Pass != pass)
+            throw new InvalidOperationException();
+        await Hub.ListenAsync(socket);
     }
 
     public async Task RunAsync()
     {
         while (true)
         {
-            await TransmitAsync();
+            await Hub.TransmitAsync();
             await Task.Delay(100);
         }
     }
