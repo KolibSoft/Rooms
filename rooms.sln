@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KolibSoft.Rooms.Core", "Kol
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KolibSoft.Rooms.Console", "KolibSoft.Rooms.Console\KolibSoft.Rooms.Console.csproj", "{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KolibSoft.Rooms.Web", "KolibSoft.Rooms.Web\KolibSoft.Rooms.Web.csproj", "{A965EF4E-6510-4904-8331-7DB1D2339682}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

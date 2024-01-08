@@ -7,6 +7,8 @@ public class RoomMessage
     public RoomChannel Channel { get; set; } = RoomChannel.None;
     public RoomContent Content { get; set; } = RoomContent.None;
 
+    public int Length => Verb.Data.Count + Channel.Data.Count + Content.Data.Count + 2;
+
     public override string ToString()
     {
         return $"{Verb} {Channel}\n{Content}";

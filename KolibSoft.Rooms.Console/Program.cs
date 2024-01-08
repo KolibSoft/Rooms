@@ -18,5 +18,11 @@ Console.WriteLine(@string);
 message = RoomMessage.Parse(@string);
 Console.WriteLine(message);
 
-message = "KCK 87654321\nHacker".ToMessage();
+message = new RoomMessage()
+{
+    Verb = RoomVerb.Parse("KCK"),
+    Channel = RoomChannel.Parse("87654321"),
+    Content = RoomContent.Parse("Reason: Hacker")
+};
 Console.WriteLine(message);
+
