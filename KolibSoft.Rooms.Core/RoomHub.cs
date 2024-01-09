@@ -31,7 +31,11 @@ public class RoomHub
             {
                 (RoomSocket author, RoomMessage message) = msg;
                 if (message.Channel == RoomChannel.Loopback)
-                    await author.SendAsync(message);
+                    try
+                    {
+                        await author.SendAsync(message);
+                    }
+                    catch { }
                 else if (message.Channel == RoomChannel.Broadcast)
                 {
                     var ochannel = message.Channel;
@@ -55,7 +59,11 @@ public class RoomHub
                     var target = message.Channel ^ hash;
                     var socket = Sockets.FirstOrDefault(x => x.GetHashCode() == target);
                     if (socket != null)
-                        await socket.SendAsync(message);
+                        try
+                        {
+                            await socket.SendAsync(message);
+                        }
+                        catch { }
                 }
 
             }
