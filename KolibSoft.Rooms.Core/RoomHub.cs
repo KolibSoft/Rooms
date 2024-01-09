@@ -8,7 +8,7 @@ public class RoomHub
     public RoomSocket[] Sockets { get; private set; } = Array.Empty<RoomSocket>();
     public ConcurrentQueue<(RoomSocket, RoomMessage)> Messages { get; } = new();
 
-    public async Task ListenAsync(RoomSocket socket, byte[]? pass = null)
+    public async Task ListenAsync(RoomSocket socket)
     {
         Sockets = Sockets.Append(socket).ToArray();
         while (socket.IsAlive)
