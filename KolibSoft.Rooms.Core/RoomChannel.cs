@@ -45,6 +45,20 @@ public struct RoomChannel(ArraySegment<byte> data)
         return !lhs.Data.SequenceEqual(rhs.Data);
     }
 
+    public static implicit operator int(RoomChannel channel)
+    {
+        var @string = channel.ToString();
+        var @int = Convert.ToInt32(@string, 16);
+        return @int;
+    }
+
+    public static implicit operator RoomChannel(int @int)
+    {
+        var @string = @int.ToString();
+        var channel = Parse(@string);
+        return channel;
+    }
+
     public static readonly RoomChannel Loopback = Parse("00000000");
     public static readonly RoomChannel Broadcast = Parse("FFFFFFFF");
 

@@ -15,7 +15,10 @@ public class RoomHub
         {
             var message = await socket.ReceiveAsync();
             if (message != null)
+            {
                 Messages.Enqueue((socket, message));
+                await Task.Delay(100);
+            }
         }
         Sockets = Sockets.Where(x => x != socket).ToArray();
     }
@@ -49,7 +52,7 @@ public class RoomHub
                 else
                 {
                     var hash = author.GetHashCode();
-                    var target = Convert.ToInt32(message.Channel.ToString(), 16) ^ hash;
+                    var target = message.Channel ^ hash;
                     var socket = Sockets.FirstOrDefault(x => x.GetHashCode() == target);
                     if (socket != null)
                         await socket.SendAsync(message);
