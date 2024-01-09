@@ -40,7 +40,7 @@ public class RoomController : ControllerBase
             room.RunAsync(TimeSpan.FromSeconds(16));
             if (room.Count < room.Slots && room.Pass == pass)
             {
-                var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync(RoomSocket.Protocol);
                 var rsocket = new RoomSocket(wsocket, 1024);
                 await room.JoinAsync(rsocket, pass);
             }

@@ -13,7 +13,12 @@ public class RoomHub
         Sockets = Sockets.Append(socket).ToArray();
         while (socket.IsAlive)
         {
-            var message = await socket.ReceiveAsync();
+            RoomMessage? message = null;
+            try
+            {
+                message = await socket.ReceiveAsync();
+            }
+            catch { }
             if (message != null)
             {
                 Messages.Enqueue((socket, message));
