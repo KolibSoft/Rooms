@@ -1,25 +1,34 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.5.002.0
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KolibSoft.Rooms.Web", "KolibSoft.Rooms.Web\KolibSoft.Rooms.Web.csproj", "{73B3D46A-9936-4A9F-915E-621DBA3560FD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KolibSoft.Rooms.Core", "KolibSoft.Rooms.Core\KolibSoft.Rooms.Core.csproj", "{2810DE2F-7C1A-41E7-AD95-D1ECBAE8FD49}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KolibSoft.Rooms.Console", "KolibSoft.Rooms.Console\KolibSoft.Rooms.Console.csproj", "{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KolibSoft.Rooms.Web", "KolibSoft.Rooms.Web\KolibSoft.Rooms.Web.csproj", "{A965EF4E-6510-4904-8331-7DB1D2339682}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{73B3D46A-9936-4A9F-915E-621DBA3560FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{73B3D46A-9936-4A9F-915E-621DBA3560FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{73B3D46A-9936-4A9F-915E-621DBA3560FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{73B3D46A-9936-4A9F-915E-621DBA3560FD}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {E44204BF-31A5-45B1-8F23-D9D2DA856401}
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2810DE2F-7C1A-41E7-AD95-D1ECBAE8FD49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2810DE2F-7C1A-41E7-AD95-D1ECBAE8FD49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2810DE2F-7C1A-41E7-AD95-D1ECBAE8FD49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2810DE2F-7C1A-41E7-AD95-D1ECBAE8FD49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7C4DB1B-8868-48F4-B2DA-BFCC4A79514F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A965EF4E-6510-4904-8331-7DB1D2339682}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

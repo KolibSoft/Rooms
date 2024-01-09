@@ -1,9 +1,15 @@
-// Send
-header: <VALUE>
+// MESSAGE FORMAT
+<VERB> <ID>
+<DATA>
 
-<BODY>
+// BROADCAST MESSAGE
+MSG 00000000
+Message Content Goes Here
 
-// Receive
-header: <VALUE>
+// TARGETED MESSAGE
+MSG 12345678
+Message Content Goes Here
 
-<BODY>
+// KICK MEMBER
+KCK 12345678
+Optional Reason Goes Here

@@ -1,15 +1,19 @@
-function test() {
-    var socket = new WebSocket("ws://localhost:5114/api/rooms");
-    socket.onmessage = ev => {
-        if (!ev.data.includes("ID:00000000"))
-            console.log("Received:\n" + ev.data);
-    }
-    socket.onopen = ev => {
-        let message = "ID:0\n\nMessage";
-        socket.send(message);
-    }
+var socket = new WebSocket("ws://localhost:5085/api/rooms/join?code=12345678");
+socket.onmessage = ev => {
+    console.log(ev.data);
 }
 
-test();
-test();
-test();
+socket.onopen = ev => {
+    console.log("Opened");
+    send("TST", "00000000", "Ping");
+}
+
+socket.onclose = ev => {
+    console.log("Closed");
+}
+
+function send(verb, channel, content) {
+    socket.send(`${verb} ${channel}\n${content}`);
+}
+
+window.send = send;
