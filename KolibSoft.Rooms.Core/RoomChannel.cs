@@ -37,12 +37,12 @@ public struct RoomChannel(ArraySegment<byte> data)
 
     public static bool operator ==(RoomChannel lhs, RoomChannel rhs)
     {
-        return lhs.Data.SequenceEqual(rhs.Data);
+        return (int)lhs == (int)rhs;
     }
 
     public static bool operator !=(RoomChannel lhs, RoomChannel rhs)
     {
-        return !lhs.Data.SequenceEqual(rhs.Data);
+        return (int)lhs != (int)rhs;
     }
 
     public static implicit operator int(RoomChannel channel)
@@ -60,6 +60,6 @@ public struct RoomChannel(ArraySegment<byte> data)
     }
 
     public static readonly RoomChannel Loopback = Parse("00000000");
-    public static readonly RoomChannel Broadcast = Parse("FFFFFFFF");
+    public static readonly RoomChannel Broadcast = Parse("ffffffff");
 
 }

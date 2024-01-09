@@ -11,10 +11,10 @@ public class RoomController : ControllerBase
     public static List<Room> Rooms { get; } = new();
 
     [HttpGet]
-    public IActionResult GetAll([FromQuery] string? tag = null)
+    public IActionResult GetAll([FromQuery] string? hint = null)
     {
         var rooms = Rooms.Where(x => x.IsAlive);
-        if (tag != null) rooms = rooms.Where(x => x.Tag == tag);
+        if (hint != null) rooms = rooms.Where(x => x.Tag?.Contains(hint, StringComparison.InvariantCultureIgnoreCase) == true);
         var items = rooms.Select(x => new RoomItem
         {
             Code = x.Code,
