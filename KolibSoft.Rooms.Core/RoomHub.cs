@@ -33,7 +33,7 @@ public class RoomHub
                         await socket.SendAsync(message.message);
                     }
                     catch { }
-            else await Task.Delay(100);
+            await Task.Delay(100);
         }
     }
 

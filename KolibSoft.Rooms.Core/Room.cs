@@ -9,20 +9,40 @@ public class Room(int code, int slots = 4, string? pass = null, string? tag = nu
     public string? Tag { get; } = tag;
 
     public RoomHub Hub { get; } = new();
+    public int Count => Hub.Sockets.Length;
+    public bool IsAlive { get; private set; } = false;
 
     public async Task JoinAsync(RoomSocket socket, string? pass)
     {
-        if (Hub.Sockets.Length >= Slots || Pass != pass)
+        if (Count >= Slots || Pass != pass)
             throw new InvalidOperationException();
         await Hub.ListenAsync(socket);
     }
 
-    public async Task RunAsync()
+    public async void RunAsync(TimeSpan ttl)
     {
-        while (true)
+        if (!IsAlive)
         {
-            await Hub.TransmitAsync();
-            await Task.Delay(100);
+            IsAlive = true;
+            DateTime tp = default;
+            tp = DateTime.UtcNow + ttl;
+            while (DateTime.UtcNow < tp)
+            {
+                await Hub.TransmitAsync();
+                await Task.Delay(100);
+            }
+            while (Count > 0)
+            {
+                await Hub.TransmitAsync();
+                await Task.Delay(100);
+            }
+            tp = DateTime.UtcNow + ttl;
+            while (DateTime.UtcNow < tp)
+            {
+                await Hub.TransmitAsync();
+                await Task.Delay(100);
+            }
+            IsAlive = false;
         }
     }
 
