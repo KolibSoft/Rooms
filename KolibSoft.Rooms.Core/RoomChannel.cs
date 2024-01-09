@@ -29,7 +29,7 @@ public struct RoomChannel(ArraySegment<byte> data)
 
     public static RoomChannel Parse(string @string)
     {
-        if (@string.Length != 8 || @string.Any(x => !char.IsDigit(x)))
+        if (@string.Length != 8 || !@string.All(char.IsAsciiHexDigit))
             throw new FormatException();
         var data = Encoding.UTF8.GetBytes(@string);
         return new RoomChannel(data);
@@ -45,6 +45,7 @@ public struct RoomChannel(ArraySegment<byte> data)
         return !lhs.Data.SequenceEqual(rhs.Data);
     }
 
-    public static readonly RoomChannel None = RoomChannel.Parse("00000000");
+    public static readonly RoomChannel Loopback = Parse("00000000");
+    public static readonly RoomChannel Broadcast = Parse("FFFFFFFF");
 
 }

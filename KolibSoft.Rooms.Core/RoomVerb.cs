@@ -45,6 +45,6 @@ public struct RoomVerb(ArraySegment<byte> data)
         return !lhs.Data.SequenceEqual(rhs.Data);
     }
 
-    public static readonly RoomVerb None = RoomVerb.Parse("NOP");
+    public static readonly RoomVerb None = Parse("NOP");
 
 }

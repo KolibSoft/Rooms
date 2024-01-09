@@ -33,7 +33,7 @@ public class RoomMessage
     public RoomMessage()
     {
         Verb = RoomVerb.None;
-        Channel = RoomChannel.None;
+        Channel = RoomChannel.Loopback;
         Content = RoomContent.None;
     }
 

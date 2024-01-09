@@ -43,6 +43,6 @@ public struct RoomContent(ArraySegment<byte> data)
         return !lhs.Data.SequenceEqual(rhs.Data);
     }
 
-    public static readonly RoomContent None = RoomContent.Parse("");
+    public static readonly RoomContent None = Parse("");
 
 }

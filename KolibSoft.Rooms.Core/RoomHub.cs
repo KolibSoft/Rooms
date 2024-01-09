@@ -24,15 +24,38 @@ public class RoomHub
     {
         while (Sockets.Any())
         {
-            while (Messages.TryDequeue(out (RoomSocket source, RoomMessage message) message))
-                foreach (var socket in Sockets)
-                    try
-                    {
-                        var channel = message.source.GetHashCode() ^ socket.GetHashCode();
-                        message.message.Channel = RoomChannel.Parse($"{channel:D8}");
-                        await socket.SendAsync(message.message);
-                    }
-                    catch { }
+            while (Messages.TryDequeue(out (RoomSocket, RoomMessage) msg))
+            {
+                (RoomSocket author, RoomMessage message) = msg;
+                if (message.Channel == RoomChannel.Loopback)
+                    await author.SendAsync(message);
+                else if (message.Channel == RoomChannel.Broadcast)
+                {
+                    var ochannel = message.Channel;
+                    var hash = author.GetHashCode();
+                    foreach (var socket in Sockets)
+                        if (socket != author)
+                        {
+                            var channel = RoomChannel.Parse($"{hash ^ socket.GetHashCode():x8}");
+                            message.Channel = channel;
+                            try
+                            {
+                                await socket.SendAsync(message);
+                            }
+                            catch { }
+                        }
+                    message.Channel = ochannel;
+                }
+                else
+                {
+                    var hash = author.GetHashCode();
+                    var target = Convert.ToInt32(message.Channel.ToString(), 16) ^ hash;
+                    var socket = Sockets.FirstOrDefault(x => x.GetHashCode() == target);
+                    if (socket != null)
+                        await socket.SendAsync(message);
+                }
+
+            }
             await Task.Delay(100);
         }
     }
