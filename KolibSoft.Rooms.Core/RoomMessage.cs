@@ -40,7 +40,7 @@ public class RoomMessage
     public static RoomMessage Parse(string @string)
     {
         if (@string.Length < 13 || @string[3] != ' ' || @string[12] != '\n')
-            throw new FormatException();
+            throw new FormatException($"Invalid message format: {@string}");
         var message = new RoomMessage();
         message.Verb = RoomVerb.Parse(@string.Substring(0, 3));
         message.Channel = RoomChannel.Parse(@string.Substring(4, 8));

@@ -1,6 +1,9 @@
+import { RoomMessage, parseRoomMessage } from "../../docs/lib/room.js";
+
 var socket = new WebSocket("ws://localhost:5085/api/rooms/join?code=12345678");
 socket.onmessage = ev => {
-    console.log(ev.data);
+    let message = parseRoomMessage(ev.data);
+    console.log(message);
 }
 
 socket.onopen = ev => {
@@ -13,7 +16,8 @@ socket.onclose = ev => {
 }
 
 function send(verb, channel, content) {
-    socket.send(`${verb} ${channel}\n${content}`);
+    var message = new RoomMessage(verb, channel, content);
+    socket.send(message.toString());
 }
 
 window.send = send;

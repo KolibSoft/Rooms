@@ -30,7 +30,7 @@ public struct RoomChannel(ArraySegment<byte> data)
     public static RoomChannel Parse(string @string)
     {
         if (@string.Length != 8 || !@string.All(char.IsAsciiHexDigit))
-            throw new FormatException();
+            throw new FormatException($"Invalid channel format: {@string}");
         var data = Encoding.UTF8.GetBytes(@string);
         return new RoomChannel(data);
     }

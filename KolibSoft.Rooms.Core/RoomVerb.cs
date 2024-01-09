@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace KolibSoft.Rooms.Core;
 
@@ -29,8 +30,8 @@ public struct RoomVerb(ArraySegment<byte> data)
 
     public static RoomVerb Parse(string @string)
     {
-        if (@string.Length != 3 || @string.Any(x => !char.IsUpper(x)))
-            throw new FormatException();
+        if (@string.Length != 3 || !@string.All(char.IsAsciiLetter))
+            throw new FormatException($"Invalid verb format: {@string}");
         var data = Encoding.UTF8.GetBytes(@string);
         return new RoomVerb(data);
     }
@@ -45,6 +46,6 @@ public struct RoomVerb(ArraySegment<byte> data)
         return !lhs.Data.SequenceEqual(rhs.Data);
     }
 
-    public static readonly RoomVerb None = Parse("NOP");
+    public static readonly RoomVerb None = Parse("NNN");
 
 }
