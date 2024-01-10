@@ -83,6 +83,7 @@ function updateRoomLog() {
         element.innerText = log;
         dRoomLog.append(element);
     }
+    dRoomLog.scrollTop = dRoomLog.scrollHeight;
 }
 
 function appendRoomLog(log) {
