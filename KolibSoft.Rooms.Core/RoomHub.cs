@@ -2,12 +2,27 @@ using System.Collections.Concurrent;
 
 namespace KolibSoft.Rooms.Core;
 
+/// <summary>
+/// Represents a connection point to sharing messages.
+/// </summary>
 public class RoomHub
 {
 
+    /// <summary>
+    /// The current hub participants.
+    /// </summary>
     public RoomSocket[] Sockets { get; private set; } = Array.Empty<RoomSocket>();
-    public ConcurrentQueue<(RoomSocket, RoomMessage)> Messages { get; } = new();
 
+    /// <summary>
+    /// The messages to send with its author.
+    /// </summary>
+    public ConcurrentQueue<(RoomSocket author, RoomMessage message)> Messages { get; } = new();
+
+    /// <summary>
+    /// Starts to receive the incoming socket messages while it is alive. Use a delay of 100ms between messages.
+    /// </summary>
+    /// <param name="socket">A conncted socket</param>
+    /// <returns></returns>
     public async Task ListenAsync(RoomSocket socket)
     {
         Sockets = Sockets.Append(socket).ToArray();
@@ -28,6 +43,10 @@ public class RoomHub
         Sockets = Sockets.Where(x => x != socket).ToArray();
     }
 
+    /// <summary>
+    /// Starts to route and send the received messages while there are participants.
+    /// </summary>
+    /// <returns></returns>
     public async Task TransmitAsync()
     {
         while (Sockets.Any())
