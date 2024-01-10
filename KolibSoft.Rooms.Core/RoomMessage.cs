@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace KolibSoft.Rooms.Core;
 
 public class RoomMessage
@@ -37,14 +39,35 @@ public class RoomMessage
         Content = RoomContent.None;
     }
 
-    public static RoomMessage Parse(string @string)
+    public static bool Verify(ReadOnlySpan<byte> utf8)
     {
-        if (@string.Length < 13 || @string[3] != ' ' || @string[12] != '\n')
+        if (utf8.Length < 13) return false;
+        var result = RoomVerb.Verify(utf8.Slice(0, 3)) && RoomChannel.Verify(utf8.Slice(4, 8)) && utf8[3] == ' ' && utf8[12] == '\n';
+        return result;
+    }
+
+    public static bool Verify(ReadOnlySpan<char> @string)
+    {
+        if (@string.Length < 13) return false;
+        var result = RoomVerb.Verify(@string.Slice(0, 3)) && RoomChannel.Verify(@string.Slice(4, 8)) && @string[3] == ' ' && @string[12] == '\n';
+        return result;
+    }
+
+    public static RoomMessage Parse(ReadOnlySpan<byte> utf8)
+    {
+        if (!Verify(utf8))
+            throw new FormatException($"Invalid message format: {Encoding.UTF8.GetString(utf8)}");
+        var message = new RoomMessage(utf8.ToArray());
+        return message;
+    }
+
+    public static RoomMessage Parse(ReadOnlySpan<char> @string)
+    {
+        if (!Verify(@string))
             throw new FormatException($"Invalid message format: {@string}");
-        var message = new RoomMessage();
-        message.Verb = RoomVerb.Parse(@string.Substring(0, 3));
-        message.Channel = RoomChannel.Parse(@string.Substring(4, 8));
-        message.Content = RoomContent.Parse(@string.Substring(13));
+        var utf8 = new byte[Encoding.UTF8.GetByteCount(@string)];
+        Encoding.UTF8.GetBytes(@string, utf8);
+        var message = new RoomMessage(utf8);
         return message;
     }
 

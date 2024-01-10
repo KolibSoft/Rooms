@@ -20,12 +20,12 @@ public class RoomSocket(WebSocket socket, int bufferingSize = 1024)
     public async Task<RoomMessage?> ReceiveAsync()
     {
         var result = await Socket.ReceiveAsync(ReceiveBuffer, CancellationToken.None);
-        if (result.MessageType != WebSocketMessageType.Text || !result.EndOfMessage)
+        var data = ReceiveBuffer.Slice(0, result.Count);
+        if (result.MessageType != WebSocketMessageType.Text || !result.EndOfMessage || !RoomMessage.Verify(data))
         {
             await Socket.CloseOutputAsync(result.CloseStatus ?? WebSocketCloseStatus.ProtocolError, result.CloseStatusDescription, CancellationToken.None);
             return null;
         }
-        var data = ReceiveBuffer.Slice(0, result.Count);
         var message = new RoomMessage(data.ToArray());
         return message;
     }

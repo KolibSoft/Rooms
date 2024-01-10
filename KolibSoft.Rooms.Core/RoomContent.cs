@@ -3,10 +3,10 @@ using System.Text;
 
 namespace KolibSoft.Rooms.Core;
 
-public struct RoomContent(ArraySegment<byte> data)
+public struct RoomContent(ArraySegment<byte> utf8)
 {
 
-    public ArraySegment<byte> Data { get; } = data;
+    public ArraySegment<byte> Data { get; } = utf8;
 
     public override string ToString()
     {
@@ -27,10 +27,16 @@ public struct RoomContent(ArraySegment<byte> data)
         return Data.GetHashCode();
     }
 
-    public static RoomContent Parse(string @string)
+    public static RoomContent Parse(ReadOnlySpan<byte> utf8)
     {
-        var data = Encoding.UTF8.GetBytes(@string);
-        return new RoomContent(data);
+        return new RoomContent(utf8.ToArray());
+    }
+
+    public static RoomContent Parse(ReadOnlySpan<char> @string)
+    {
+        var utf8 = new byte[Encoding.UTF8.GetByteCount(@string)];
+        Encoding.UTF8.GetBytes(@string, utf8);
+        return new RoomContent(utf8);
     }
 
     public static bool operator ==(RoomContent lhs, RoomContent rhs)

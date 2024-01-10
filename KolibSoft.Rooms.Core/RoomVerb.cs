@@ -1,13 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace KolibSoft.Rooms.Core;
 
-public struct RoomVerb(ArraySegment<byte> data)
+public struct RoomVerb(ArraySegment<byte> utf8)
 {
 
-    public ArraySegment<byte> Data { get; } = data;
+    public ArraySegment<byte> Data { get; } = utf8;
 
     public override string ToString()
     {
@@ -28,12 +27,46 @@ public struct RoomVerb(ArraySegment<byte> data)
         return Data.GetHashCode();
     }
 
-    public static RoomVerb Parse(string @string)
+    public static bool Verify(ReadOnlySpan<byte> utf8)
     {
-        if (@string.Length != 3 || !@string.All(char.IsAsciiLetter))
+        if (utf8.Length != 3) return false;
+        for (var i = 0; i < utf8.Length; i++)
+        {
+            var c = utf8[i];
+            if (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z')
+                continue;
+            return false;
+        }
+        return true;
+    }
+
+    public static bool Verify(ReadOnlySpan<char> @string)
+    {
+        if (@string.Length != 3) return false;
+        for (var i = 0; i < @string.Length; i++)
+        {
+            var c = @string[i];
+            if (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z')
+                continue;
+            return false;
+        }
+        return true;
+    }
+
+    public static RoomVerb Parse(ReadOnlySpan<byte> utf8)
+    {
+        if (!Verify(utf8))
+            throw new FormatException($"Invalid verb format: {Encoding.UTF8.GetString(utf8)}");
+        return new RoomVerb(utf8.ToArray());
+    }
+
+    public static RoomVerb Parse(ReadOnlySpan<char> @string)
+    {
+        if (!Verify(@string))
             throw new FormatException($"Invalid verb format: {@string}");
-        var data = Encoding.UTF8.GetBytes(@string);
-        return new RoomVerb(data);
+        var utf8 = new byte[3];
+        Encoding.UTF8.GetBytes(@string, utf8);
+        return new RoomVerb(utf8);
     }
 
     public static bool operator ==(RoomVerb lhs, RoomVerb rhs)
