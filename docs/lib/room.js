@@ -39,7 +39,7 @@ function convertChannel(srcChannel, dstChannel) {
     let src = parseInt(srcChannel, 16);
     let dst = parseInt(dstChannel, 16);
     let convert = src ^ dst;
-    let channel = convert.toString(16);
+    let channel = convert.toString(16).padStart(8, "0");
     return channel;
 }
 
