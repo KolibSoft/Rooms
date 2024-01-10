@@ -9,7 +9,7 @@ namespace KolibSoft.Rooms.Web;
 public class RoomController : ControllerBase
 {
 
-    public static List<Room> Rooms { get; } = new();
+    public static List<Room> Rooms { get; private set; } = new();
 
     [HttpGet]
     public IActionResult GetAll([FromQuery] string? hint = null)
@@ -35,8 +35,11 @@ public class RoomController : ControllerBase
             var room = Rooms.FirstOrDefault(x => x.Code == code);
             if (room == null)
             {
-                room = new Room(code, slots, pass, tag);
-                Rooms.Add(room);
+                var index = Rooms.FindIndex(x => !x.IsAlive);
+                if (index < 0 && Rooms.Count >= 128) return;
+                room = new Room(code, int.Min(slots, 16), pass?.Substring(0, 32), tag?.Substring(0, 128));
+                if (index >= 0) Rooms[index] = room;
+                else Rooms.Add(room);
             }
             room.RunAsync(TimeSpan.FromSeconds(16));
             if (room.Count < room.Slots && room.Pass == pass)

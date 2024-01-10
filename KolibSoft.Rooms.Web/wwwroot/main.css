@@ -1,9 +1,76 @@
-html {
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
     font-family: monospace;
+}
+
+html {
+    padding: 10px;
     background-color: gray;
 }
 
-input, select {
-    padding: 5px;
+h2 {
+    margin-top: 15px;
+}
+
+input,
+select,
+textarea {
+    margin: 10px 0px;
+    padding: 5px 10px;
     border-radius: 5px;
+}
+
+input[type="button"] {
+    background-color: lightgray;
+    cursor: pointer;
+}
+
+input[type="button"]:active {
+    background-color: silver;
+}
+
+#dRoomList>p {
+    display: block;
+    background-color: lightgray;
+    margin: 5px 0px;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+#tRoomEndpoint {
+    width: calc(100% - 20px);
+}
+
+#tRoomCode {
+    width: 8ch;
+}
+
+#dRoomLog {
+    display: block;
+    background-color: lightgray;
+    margin: 10px 0px;
+    padding: 1ch;
+    border-radius: 5px;
+    height: 25ch;
+    overflow-wrap: break-word;
+    overflow-y: scroll;
+}
+
+#tRoomVerb {
+    width: 3ch;
+}
+
+#tRoomChannel {
+    width: 8ch;
+}
+
+#tRoomContent {
+    display: block;
+    margin-top: 0;
+    width: calc(100% - 20px);
+    min-height: 2ch;
+    height: 2ch;
+    resize: vertical;
 }
