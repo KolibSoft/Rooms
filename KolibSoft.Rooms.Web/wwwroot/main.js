@@ -1,6 +1,7 @@
 import { RoomProtocol, parseRoomMessage, RoomLoopback, RoomBroadcast, RoomMessage } from "https://kolibsoft.github.io/rooms/lib/room.js";
 
 let socket = null;
+let logs = [];
 let verbOptions = [];
 let channelOptions = [RoomLoopback, RoomBroadcast];
 let contentOptions = [];
@@ -25,13 +26,6 @@ let sRoomChannel = document.getElementById("sRoomChannel");
 let tRoomContent = document.getElementById("tRoomContent");
 let sRoomContent = document.getElementById("sRoomContent");
 let bSend = document.getElementById("bSend");
-
-function appendOption(select, value, text) {
-    let option = document.createElement("option");
-    option.value = value;
-    option.text = text ?? value;
-    select.append(option);
-}
 
 async function fetchRoomList() {
     let response = await fetch(`${tRoomEndpoint.value}?hint=${tRoomHint.value}`);
@@ -60,18 +54,14 @@ function joinRoom() {
     socket = new WebSocket(endpoint.href, RoomProtocol);
 
     socket.addEventListener("open", function () {
-        channelOptions = [RoomLoopback, RoomBroadcast];
-        sRoomChannel.innerHTML = "";
-        appendOption(sRoomChannel, RoomLoopback, "Loopback");
-        appendOption(sRoomChannel, RoomBroadcast, "Broadcast");
+        resetRoomLog();
+        resetMessageOptions();
         appendRoomLog("Joined");
         bSend.disabled = false;
         fetchRoomList();
     });
 
     socket.addEventListener("close", function () {
-        channelOptions = [];
-        sRoomChannel.innerHTML = "";
         appendRoomLog("Left");
         bSend.disabled = true;
         fetchRoomList();
@@ -86,37 +76,84 @@ function joinRoom() {
 }
 bJoin.addEventListener("click", joinRoom);
 
+function updateRoomLog() {
+    dRoomLog.innerHTML = "";
+    for (let log of logs) {
+        let element = document.createElement("p");
+        element.innerText = log;
+        dRoomLog.append(element);
+    }
+}
+
 function appendRoomLog(log) {
-    let element = document.createElement("p");
-    element.innerText = log;
-    dRoomLog.append(element);
+    logs.push(log);
+    updateRoomLog();
+}
+
+function updateVerbOptions() {
+    sRoomVerb.innerHTML = "";
+    for (let verb of verbOptions) {
+        let element = document.createElement("option");
+        element.value = verb;
+        element.text = verb;
+        sRoomVerb.append(element);
+    }
+}
+
+function updateChannelOptions() {
+    sRoomChannel.innerHTML = "";
+    for (let channel of channelOptions) {
+        let element = document.createElement("option");
+        element.value = channel;
+        element.text = channel == "00000000" ? "Loopback" : channel == "ffffffff" || channel == "FFFFFFFF" ? "Broadcast" : channel;
+        sRoomChannel.append(element);
+    }
+}
+
+function updateContentOptions() {
+    sRoomContent.innerHTML = "";
+    for (let content of contentOptions) {
+        let element = document.createElement("option");
+        element.value = content;
+        element.text = content;
+        sRoomContent.append(element);
+    }
 }
 
 function appendMessageOptions(message) {
 
     if (!verbOptions.includes(message.verb)) {
         verbOptions.push(message.verb);
-        let option = document.createElement("option");
-        option.value = message.verb;
-        option.text = message.verb;
-        sRoomVerb.append(option);
+        updateVerbOptions();
     }
 
     if (!channelOptions.includes(message.channel)) {
         channelOptions.push(message.channel);
-        let option = document.createElement("option");
-        option.value = message.channel;
-        option.text = message.channel;
-        sRoomChannel.append(option);
+        updateChannelOptions();
     }
 
     if (!contentOptions.includes(message.content)) {
         contentOptions.push(message.content);
-        let option = document.createElement("option");
-        option.value = message.content;
-        option.text = message.content;
-        sRoomContent.append(option);
+        updateContentOptions();
     }
+
+}
+
+function resetRoomLog() {
+    logs = [];
+    updateRoomLog();
+}
+
+function resetMessageOptions() {
+
+    verbOptions = ["TST"];
+    updateVerbOptions();
+
+    channelOptions = ["00000000", "ffffffff"];
+    updateChannelOptions();
+
+    contentOptions = ["Ping"];
+    updateContentOptions();
 
 }
 
@@ -141,7 +178,7 @@ function sendRoomMessage() {
 bSend.addEventListener("click", sendRoomMessage);
 
 let url = new URL(location.href);
-url.pathname += "api/rooms";
+url.pathname = "api/rooms";
 tRoomEndpoint.value = url.href;
 
 tRoomCode.value = (Math.random() * 99999999).toFixed().toString();
@@ -151,4 +188,6 @@ tRoomChannel.value = RoomLoopback;
 tRoomContent.value = "Ping";
 bSend.disabled = true;
 
+resetRoomLog();
+resetMessageOptions();
 fetchRoomList();

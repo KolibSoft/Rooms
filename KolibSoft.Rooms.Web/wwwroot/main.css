@@ -2,3 +2,8 @@ html {
     font-family: monospace;
     background-color: gray;
 }
+
+input, select {
+    padding: 5px;
+    border-radius: 5px;
+}

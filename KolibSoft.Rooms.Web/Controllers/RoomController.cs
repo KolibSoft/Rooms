@@ -1,9 +1,10 @@
 using KolibSoft.Rooms.Core;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace KolibSoft.Rooms.Web;
 
+[EnableCors("PUBLIC")]
 [Route("/api/rooms")]
 public class RoomController : ControllerBase
 {
