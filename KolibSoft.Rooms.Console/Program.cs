@@ -1,27 +1,78 @@
-﻿using System.Text;
+﻿using System.Net.WebSockets;
 using KolibSoft.Rooms.Core;
 
-Console.WriteLine(RoomVerb.None);
-Console.WriteLine(RoomChannel.Loopback);
-Console.WriteLine(RoomContent.None);
-Console.WriteLine(new RoomMessage());
+var code = GetArg(0, "Enter Room Code: ");
+if (string.IsNullOrEmpty(code)) code = Random.Shared.Next().ToString().Substring(0, 8);
 
-var message = new RoomMessage()
+var slots = GetArg(1, "Enter Room Slots: ");
+var pass = GetArg(2, "Enter Room Pass: ");
+var tag = GetArg(2, "Enter Room Tag: ");
+Console.WriteLine($"Room Code: {code}");
+
+var client = new ClientWebSocket();
+client.Options.AddSubProtocol(RoomSocket.Protocol);
+await client.ConnectAsync(new Uri($"wss://krooms.azurewebsites.net/api/rooms/join?code={code}&slots={slots ?? ""}&pass={pass ?? ""}&tag={tag ?? ""}"), CancellationToken.None);
+var socket = new RoomSocket(client);
+
+_ = Task.Run(async () =>
 {
-    Verb = RoomVerb.Parse("MSG"),
-    Channel = RoomChannel.Parse("1A1A1A1A"),
-    Content = RoomContent.Parse("Message Text Content")
-};
+    while (socket.IsAlive)
+    {
+        RoomMessage? message = null;
+        try
+        {
+            message = await socket.ReceiveAsync();
+        }
+        catch { }
+        if (message != null)
+        {
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.WriteLine($"{message.Verb} [{message.Channel}] {message.Content}");
+            Console.Write("> ");
+        }
+        await Task.Delay(100);
+    }
+});
 
-var @string = message.ToString();
-Console.WriteLine(@string);
-message = RoomMessage.Parse(@string);
-Console.WriteLine(message);
-
-message = new RoomMessage()
+while (socket.IsAlive)
 {
-    Verb = RoomVerb.Parse("KCK"),
-    Channel = RoomChannel.Parse("A1A1A1A1"),
-    Content = RoomContent.Parse("Reason: Hacker")
-};
+    Console.Write("> ");
+    var input = Console.ReadLine();
+    if (input != null)
+    {
+        var @string = input.AsMemory();
+        if (@string.Length < 13) { Console.WriteLine("Expected: <verb> <channel> <content>"); continue; }
+        if (!RoomVerb.Verify(@string.Slice(0, 3).Span)) { Console.WriteLine("Expected a valid verb"); continue; }
+        if (!RoomChannel.Verify(@string.Slice(4, 8).Span)) { Console.WriteLine("Expected a valid channel"); continue; }
+        var message = new RoomMessage
+        {
+            Verb = RoomVerb.Parse(@string.Slice(0, 3).Span),
+            Channel = RoomChannel.Parse(@string.Slice(4, 8).Span),
+            Content = RoomContent.Parse(@string.Slice(13).Span)
+        };
+        try
+        {
+            await socket.SendAsync(message);
+        }
+        catch { }
+    }
+}
 
+string? Prompt(string hint)
+{
+    Console.Write(hint);
+    var input = Console.ReadLine();
+    return input;
+}
+
+string? GetArg(int index, string? hint)
+{
+    string? arg = null;
+    if (args.Length > index)
+    {
+        arg = args[index];
+        return arg;
+    }
+    arg = Prompt(hint ?? "");
+    return arg;
+}
