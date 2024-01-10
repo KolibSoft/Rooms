@@ -37,12 +37,12 @@ public struct RoomChannel(ArraySegment<byte> data)
 
     public static bool operator ==(RoomChannel lhs, RoomChannel rhs)
     {
-        return (int)lhs == (int)rhs;
+        return lhs.Data.SequenceEqual(rhs.Data) || (int)lhs == (int)rhs;
     }
 
     public static bool operator !=(RoomChannel lhs, RoomChannel rhs)
     {
-        return (int)lhs != (int)rhs;
+        return !lhs.Data.SequenceEqual(rhs.Data) && (int)lhs != (int)rhs;
     }
 
     public static implicit operator int(RoomChannel channel)

@@ -35,6 +35,14 @@ function parseRoomMessage(string = "") {
     return message;
 }
 
+function convertChannel(srcChannel, dstChannel) {
+    let src = parseInt(srcChannel, 16);
+    let dst = parseInt(dstChannel, 16);
+    let convert = src ^ dst;
+    let channel = convert.toString(16);
+    return channel;
+}
+
 export {
     RoomProtocol,
     RoomNoVerb,
@@ -42,5 +50,6 @@ export {
     RoomBroadcast,
     RoomNoContent,
     RoomMessage,
-    parseRoomMessage
+    parseRoomMessage,
+    convertChannel
 }
