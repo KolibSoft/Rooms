@@ -1,12 +1,12 @@
 ﻿using System.Net.WebSockets;
 using KolibSoft.Rooms.Core;
 
-var code = GetArg(0, "Enter Room Code: ");
+var code = GetArg(0, "Enter Room Code (random): ")?.Substring(0, 8);
 if (string.IsNullOrEmpty(code)) code = Random.Shared.Next().ToString().Substring(0, 8);
 
-var slots = GetArg(1, "Enter Room Slots: ");
-var pass = GetArg(2, "Enter Room Pass: ");
-var tag = GetArg(2, "Enter Room Tag: ");
+var slots = GetArg(1, "Enter Room Slots (4): ");
+var pass = GetArg(2, "Enter Room Pass (optional): ");
+var tag = GetArg(2, "Enter Room Tag (optional): ");
 Console.WriteLine($"Room Code: {code}");
 
 var client = new ClientWebSocket();
