@@ -2,15 +2,36 @@ using System.Text;
 
 namespace KolibSoft.Rooms.Core;
 
+/// <summary>
+/// Represents a hub message.
+/// </summary>
 public class RoomMessage
 {
 
+    /// <summary>
+    /// The message verb component.
+    /// </summary>
     public RoomVerb Verb { get; set; }
+
+    /// <summary>
+    /// The message channel component.
+    /// </summary>
     public RoomChannel Channel { get; set; }
+
+    /// <summary>
+    /// The message content component.
+    /// </summary>
     public RoomContent Content { get; set; }
 
+    /// <summary>
+    /// The message total size in bytes (format blanks included).
+    /// </summary>
     public int Length => Verb.Data.Count + Channel.Data.Count + Content.Data.Count + 2;
 
+    /// <summary>
+    /// Copies the message into a data buffer.
+    /// </summary>
+    /// <param name="data">Data buffer.</param>
     public void CopyTo(ArraySegment<byte> data)
     {
         Verb.Data.CopyTo(data.Slice(0, 3));
@@ -20,11 +41,19 @@ public class RoomMessage
         data[12] = (byte)'\n';
     }
 
+    /// <summary>
+    /// Gets the string representation of the message.
+    /// </summary>
+    /// <returns></returns>
     public override string ToString()
     {
         return $"{Verb} {Channel}\n{Content}";
     }
 
+    /// <summary>
+    /// Constructs a message with the UTF8 text provided whitout validate it.
+    /// </summary>
+    /// <param name="data">UTF8 text</param>
     public RoomMessage(ArraySegment<byte> data)
     {
         Verb = new RoomVerb(data.Slice(0, 3));
@@ -32,6 +61,9 @@ public class RoomMessage
         Content = new RoomContent(data.Slice(13));
     }
 
+    /// <summary>
+    /// Constructs a default empty message
+    /// </summary>
     public RoomMessage()
     {
         Verb = RoomVerb.None;
@@ -39,6 +71,11 @@ public class RoomMessage
         Content = RoomContent.None;
     }
 
+    /// <summary>
+    /// Verify if the provided UTF8 text is a valid message.
+    /// </summary>
+    /// <param name="utf8">UTF8 text</param>
+    /// <returns></returns>
     public static bool Verify(ReadOnlySpan<byte> utf8)
     {
         if (utf8.Length < 13) return false;
@@ -46,6 +83,11 @@ public class RoomMessage
         return result;
     }
 
+    /// <summary>
+    /// Verify if the provided string is a valid message.
+    /// </summary>
+    /// <param name="string">String</param>
+    /// <returns></returns>
     public static bool Verify(ReadOnlySpan<char> @string)
     {
         if (@string.Length < 13) return false;
@@ -53,6 +95,11 @@ public class RoomMessage
         return result;
     }
 
+    /// <summary>
+    /// Parses an UTF8 text into a message.
+    /// </summary>
+    /// <param name="utf8">UTF8 text.</param>
+    /// <returns></returns>
     public static RoomMessage Parse(ReadOnlySpan<byte> utf8)
     {
         if (!Verify(utf8))
@@ -61,6 +108,11 @@ public class RoomMessage
         return message;
     }
 
+    /// <summary>
+    /// Parses an string into a message.
+    /// </summary>
+    /// <param name="string">String</param>
+    /// <returns></returns>
     public static RoomMessage Parse(ReadOnlySpan<char> @string)
     {
         if (!Verify(@string))

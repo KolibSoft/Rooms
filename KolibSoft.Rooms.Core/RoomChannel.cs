@@ -3,11 +3,22 @@ using System.Text;
 
 namespace KolibSoft.Rooms.Core;
 
+/// <summary>
+/// Represents an 8-digit hexadecimal number that represents a 32-bit unsigned integer.
+/// </summary>
+/// <param name="utf8">UTF8 text.</param>
 public struct RoomChannel(ArraySegment<byte> utf8)
 {
 
+    /// <summary>
+    /// UTF8 internal data.
+    /// </summary>
     public ArraySegment<byte> Data { get; } = utf8;
 
+    /// <summary>
+    /// Gets the string representation of the channel.
+    /// </summary>
+    /// <returns></returns>
     public override string ToString()
     {
         return Encoding.UTF8.GetString(Data);
@@ -27,6 +38,11 @@ public struct RoomChannel(ArraySegment<byte> utf8)
         return Data.GetHashCode();
     }
 
+    /// <summary>
+    /// Verify if the provided UTF8 text is a valid channel.
+    /// </summary>
+    /// <param name="utf8">UTF8 text.</param>
+    /// <returns></returns>
     public static bool Verify(ReadOnlySpan<byte> utf8)
     {
         if (utf8.Length != 8) return false;
@@ -40,6 +56,11 @@ public struct RoomChannel(ArraySegment<byte> utf8)
         return true;
     }
 
+    /// <summary>
+    /// Verify if the provided string is a valid channel.
+    /// </summary>
+    /// <param name="string">String.</param>
+    /// <returns></returns>
     public static bool Verify(ReadOnlySpan<char> @string)
     {
         if (@string.Length != 8) return false;
@@ -53,6 +74,12 @@ public struct RoomChannel(ArraySegment<byte> utf8)
         return true;
     }
 
+    /// <summary>
+    /// Parses an UTF8 text into a channel.
+    /// </summary>
+    /// <param name="utf8">UTF8 text.</param>
+    /// <returns></returns>
+    /// <exception cref="FormatException"></exception>
     public static RoomChannel Parse(ReadOnlySpan<byte> utf8)
     {
         if (!Verify(utf8))
@@ -60,6 +87,12 @@ public struct RoomChannel(ArraySegment<byte> utf8)
         return new RoomChannel(utf8.ToArray());
     }
 
+    /// <summary>
+    /// Parses an string into a channel.
+    /// </summary>
+    /// <param name="string">String.</param>
+    /// <returns></returns>
+    /// <exception cref="FormatException"></exception>
     public static RoomChannel Parse(ReadOnlySpan<char> @string)
     {
         if (!Verify(@string))
@@ -68,6 +101,7 @@ public struct RoomChannel(ArraySegment<byte> utf8)
         Encoding.UTF8.GetBytes(@string, utf8);
         return new RoomChannel(utf8);
     }
+
     public static bool operator ==(RoomChannel lhs, RoomChannel rhs)
     {
         return lhs.Data.SequenceEqual(rhs.Data) || (int)lhs == (int)rhs;
@@ -92,7 +126,14 @@ public struct RoomChannel(ArraySegment<byte> utf8)
         return channel;
     }
 
+    /// <summary>
+    /// Loopback channel 00000000.
+    /// </summary>
     public static readonly RoomChannel Loopback = Parse("00000000");
+
+    /// <summary>
+    /// Broadcast channel ffffffff.
+    /// </summary>
     public static readonly RoomChannel Broadcast = Parse("ffffffff");
 
 }

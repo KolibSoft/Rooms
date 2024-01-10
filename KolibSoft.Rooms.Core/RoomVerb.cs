@@ -3,11 +3,22 @@ using System.Text;
 
 namespace KolibSoft.Rooms.Core;
 
+/// <summary>
+/// Represents a sequence of 3 uppercase or lowercase letters of the ASCII code as UTF8 text.
+/// </summary>
+/// <param name="utf8">UTF8 text.</param>
 public struct RoomVerb(ArraySegment<byte> utf8)
 {
 
+    /// <summary>
+    /// UTF8 internal data.
+    /// </summary>
     public ArraySegment<byte> Data { get; } = utf8;
 
+    /// <summary>
+    /// Gets the string representation of the verb.
+    /// </summary>
+    /// <returns></returns>
     public override string ToString()
     {
         return Encoding.UTF8.GetString(Data);
@@ -27,6 +38,11 @@ public struct RoomVerb(ArraySegment<byte> utf8)
         return Data.GetHashCode();
     }
 
+    /// <summary>
+    /// Verify if the provided UTF8 text is a valid verb.
+    /// </summary>
+    /// <param name="utf8">UTF8 text.</param>
+    /// <returns></returns>
     public static bool Verify(ReadOnlySpan<byte> utf8)
     {
         if (utf8.Length != 3) return false;
@@ -40,6 +56,11 @@ public struct RoomVerb(ArraySegment<byte> utf8)
         return true;
     }
 
+    /// <summary>
+    /// Verify if the provided string is a valid verb.
+    /// </summary>
+    /// <param name="string">String.</param>
+    /// <returns></returns>
     public static bool Verify(ReadOnlySpan<char> @string)
     {
         if (@string.Length != 3) return false;
@@ -53,6 +74,12 @@ public struct RoomVerb(ArraySegment<byte> utf8)
         return true;
     }
 
+    /// <summary>
+    /// Parses an UTF8 text into a verb.
+    /// </summary>
+    /// <param name="utf8">UTF8 text.</param>
+    /// <returns></returns>
+    /// <exception cref="FormatException"></exception>
     public static RoomVerb Parse(ReadOnlySpan<byte> utf8)
     {
         if (!Verify(utf8))
@@ -60,6 +87,12 @@ public struct RoomVerb(ArraySegment<byte> utf8)
         return new RoomVerb(utf8.ToArray());
     }
 
+    /// <summary>
+    /// Parses an string into a verb.
+    /// </summary>
+    /// <param name="string">String</param>
+    /// <returns></returns>
+    /// <exception cref="FormatException"></exception>
     public static RoomVerb Parse(ReadOnlySpan<char> @string)
     {
         if (!Verify(@string))
@@ -79,6 +112,9 @@ public struct RoomVerb(ArraySegment<byte> utf8)
         return !lhs.Data.SequenceEqual(rhs.Data);
     }
 
+    /// <summary>
+    /// A default NNN verb.
+    /// </summary>
     public static readonly RoomVerb None = Parse("NNN");
 
 }
