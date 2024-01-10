@@ -79,8 +79,8 @@ bJoin.addEventListener("click", joinRoom);
 function updateRoomLog() {
     dRoomLog.innerHTML = "";
     for (let log of logs) {
-        let element = document.createElement("p");
-        element.innerText = log;
+        let element = document.createElement("div");
+        element.innerHTML = log;
         dRoomLog.append(element);
     }
     dRoomLog.scrollTop = dRoomLog.scrollHeight;
