@@ -97,6 +97,7 @@ function updateVerbOptions() {
         let element = document.createElement("option");
         element.value = verb;
         element.text = verb;
+        element.title = verb;
         sRoomVerb.append(element);
     }
 }
@@ -107,6 +108,7 @@ function updateChannelOptions() {
         let element = document.createElement("option");
         element.value = channel;
         element.text = channel == "00000000" ? "Loopback" : channel == "ffffffff" || channel == "FFFFFFFF" ? "Broadcast" : channel;
+        element.title = channel;
         sRoomChannel.append(element);
     }
 }
@@ -116,7 +118,8 @@ function updateContentOptions() {
     for (let content of contentOptions) {
         let element = document.createElement("option");
         element.value = content;
-        element.text = content;
+        element.text = content.length > 16 ? `${content.substring(0, 13)}...` : content;
+        element.title = content;
         sRoomContent.append(element);
     }
 }
@@ -149,24 +152,30 @@ function resetMessageOptions() {
 
     verbOptions = ["TST"];
     updateVerbOptions();
+    sRoomVerb.title = "TST";
 
     channelOptions = ["00000000", "ffffffff"];
     updateChannelOptions();
+    sRoomChannel.title = "00000000";
 
     contentOptions = ["Ping"];
     updateContentOptions();
+    sRoomContent.title = "Ping";
 
 }
 
 sRoomVerb.addEventListener("input", function () {
+    sRoomVerb.title = sRoomVerb.value;
     tRoomVerb.value = sRoomVerb.value;
 });
 
 sRoomChannel.addEventListener("input", function () {
+    sRoomChannel.title = sRoomChannel.value;
     tRoomChannel.value = sRoomChannel.value;
 });
 
 sRoomContent.addEventListener("input", function () {
+    sRoomContent.title = sRoomContent.value;
     tRoomContent.value = sRoomContent.value;
 });
 

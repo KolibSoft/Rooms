@@ -15,10 +15,20 @@ h2 {
 }
 
 input,
-select {
+select,
+textarea {
     margin: 10px 0px;
     padding: 5px 10px;
     border-radius: 5px;
+}
+
+input[type="button"] {
+    background-color: lightgray;
+    cursor: pointer;
+}
+
+input[type="button"]:active {
+    background-color: silver;
 }
 
 #dRoomList>p {
@@ -40,6 +50,7 @@ select {
 #dRoomLog {
     display: block;
     background-color: lightgray;
+    margin: 10px 0px;
     padding: 1ch;
     border-radius: 5px;
     height: 25ch;
@@ -53,4 +64,13 @@ select {
 
 #tRoomChannel {
     width: 8ch;
+}
+
+#tRoomContent {
+    display: block;
+    margin-top: 0;
+    width: calc(100% - 20px);
+    min-height: 2ch;
+    height: 2ch;
+    resize: vertical;
 }
