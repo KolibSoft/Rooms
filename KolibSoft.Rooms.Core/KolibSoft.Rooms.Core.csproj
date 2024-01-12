@@ -9,7 +9,7 @@
   <PropertyGroup>
     <PackageId>KolibSoft.Rooms.Core</PackageId>
     <AssemblyName>KolibSoft.Rooms.Core</AssemblyName>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion>1.0.1</PackageVersion>
     <Authors>Kolib Software</Authors>
     <Copyright>Kolib Software</Copyright>
     <RepositoryUrl>https://github.com/KolibSoft/rooms</RepositoryUrl>
