@@ -10,6 +10,8 @@ public class RoomController : ControllerBase
 {
 
     public static List<Room> Rooms { get; private set; } = new();
+    public static int Buffering = 512 * 1024 * 1024;
+    public static int BufferingUsage => Rooms.Sum(x => x.Hub.Sockets.Sum(x => x.SendBuffer.Count + x.ReceiveBuffer.Count));
 
     [HttpGet]
     public IActionResult GetAll([FromQuery] string? hint = null)
@@ -28,24 +30,31 @@ public class RoomController : ControllerBase
     }
 
     [HttpGet("join")]
-    public async Task JoinAsync([FromQuery] int code, [FromQuery] int slots = 4, [FromQuery] string? pass = null, [FromQuery] string? tag = null)
+    public async Task JoinAsync([FromQuery] int code, [FromQuery] int slots = 4, [FromQuery] string? pass = null, [FromQuery] string? tag = null, [FromQuery] int buffering = 1024)
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
+            code = int.Parse(code.ToString().PadLeft(8, '0')[^8..]);
+            slots = int.Max(2, int.Min(slots, 16));
+            pass = pass?[32..];
+            tag = tag?[128..];
+            buffering = int.Max(1024, int.Min(buffering, 16 * 1024 * 1024));
+            if (BufferingUsage + buffering * 2 > Buffering) return;
+            //
             var room = Rooms.FirstOrDefault(x => x.Code == code);
             if (room == null)
             {
                 var index = Rooms.FindIndex(x => !x.IsAlive);
-                if (index < 0 && Rooms.Count >= 128) return;
-                room = new Room(code, int.Min(slots, 16), pass?.Substring(0, 32), tag?.Substring(0, 128));
+                room = new Room(code, slots, pass, tag);
                 if (index >= 0) Rooms[index] = room;
                 else Rooms.Add(room);
             }
+            //
             room.RunAsync(TimeSpan.FromSeconds(16));
             if (room.Count < room.Slots && room.Pass == pass)
             {
                 var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync(RoomSocket.Protocol);
-                var rsocket = new RoomSocket(wsocket, 1024);
+                var rsocket = new RoomSocket(wsocket, buffering);
                 await room.JoinAsync(rsocket, pass);
             }
         }
