@@ -32,8 +32,11 @@ public class RoomMessage
     /// Copies the message into a data buffer.
     /// </summary>
     /// <param name="data">Data buffer.</param>
+    /// <exception cref="ArgumentException"></exception>
     public void CopyTo(ArraySegment<byte> data)
     {
+        if (data.Count < Length)
+            throw new ArgumentException("Data is too short");
         Verb.Data.CopyTo(data.Slice(0, 3));
         Channel.Data.CopyTo(data.Slice(4, 8));
         Content.Data.CopyTo(data.Slice(13));
@@ -48,6 +51,16 @@ public class RoomMessage
     public override string ToString()
     {
         return $"{Verb} {Channel}\n{Content}";
+    }
+
+    /// <summary>
+    /// Validate if the current data is a valid message.
+    /// </summary>
+    /// <returns></returns>
+    public bool Validate()
+    {
+        var result = Verb.Validate() && Channel.Validate();
+        return result;
     }
 
     /// <summary>

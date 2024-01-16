@@ -39,6 +39,16 @@ public struct RoomChannel(ArraySegment<byte> utf8)
     }
 
     /// <summary>
+    /// Validate if the current data is a valid channel.
+    /// </summary>
+    /// <returns></returns>
+    public bool Validate()
+    {
+        var result = Verify(Data);
+        return result;
+    }
+
+    /// <summary>
     /// Verify if the provided UTF8 text is a valid channel.
     /// </summary>
     /// <param name="utf8">UTF8 text.</param>
