@@ -16,6 +16,7 @@ let tRoomCode = document.getElementById("tRoomCode");
 let tRoomSlots = document.getElementById("tRoomSlots");
 let tRoomPass = document.getElementById("tRoomPass");
 let tRoomTag = document.getElementById("tRoomTag");
+let tRoomBuffering = document.getElementById("tRoomBuffering");
 let bJoin = document.getElementById("bJoin");
 
 let dRoomLog = document.getElementById("dRoomLog");
@@ -34,7 +35,7 @@ async function fetchRoomList() {
         dRoomList.innerHTML = "";
         for (let room of rooms) {
             let element = document.createElement("p");
-            element.innerText = `${room.code} ${room.count}/${room.slots} (${room.pass ? "PRIVATE" : "PUBLIC"}) [${room.tag ?? ""}]`;
+            element.innerText = `${room.code.toString().padStart(8, "0")} ${room.count}/${room.slots} (${room.pass ? "PRIVATE" : "PUBLIC"}) [${room.tag ?? ""}]`;
             dRoomList.append(element);
         }
     }
@@ -51,6 +52,7 @@ function joinRoom() {
     endpoint.searchParams.set("slots", tRoomSlots.value);
     endpoint.searchParams.set("pass", tRoomPass.value);
     endpoint.searchParams.set("tag", tRoomTag.value);
+    endpoint.searchParams.set("buffering", tRoomBuffering.value);
     socket = new WebSocket(endpoint.href, RoomProtocol);
 
     socket.addEventListener("open", function () {

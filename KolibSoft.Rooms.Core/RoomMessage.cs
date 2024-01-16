@@ -32,11 +32,14 @@ public class RoomMessage
     /// Copies the message into a data buffer.
     /// </summary>
     /// <param name="data">Data buffer.</param>
+    /// <exception cref="ArgumentException"></exception>
     public void CopyTo(ArraySegment<byte> data)
     {
-        Verb.Data.CopyTo(data.Slice(0, 3));
-        Channel.Data.CopyTo(data.Slice(4, 8));
-        Content.Data.CopyTo(data.Slice(13));
+        if (data.Count < Length)
+            throw new ArgumentException("Data is too short");
+        Verb.Data.CopyTo(data[..3]);
+        Channel.Data.CopyTo(data[4..12]);
+        Content.Data.CopyTo(data[13..]);
         data[3] = (byte)' ';
         data[12] = (byte)'\n';
     }
@@ -51,14 +54,24 @@ public class RoomMessage
     }
 
     /// <summary>
+    /// Validate if the current data is a valid message.
+    /// </summary>
+    /// <returns></returns>
+    public bool Validate()
+    {
+        var result = Verb.Validate() && Channel.Validate();
+        return result;
+    }
+
+    /// <summary>
     /// Constructs a message with the UTF8 text provided whitout validate it.
     /// </summary>
     /// <param name="data">UTF8 text</param>
     public RoomMessage(ArraySegment<byte> data)
     {
-        Verb = new RoomVerb(data.Slice(0, 3));
-        Channel = new RoomChannel(data.Slice(4, 8));
-        Content = new RoomContent(data.Slice(13));
+        Verb = new RoomVerb(data[..3]);
+        Channel = new RoomChannel(data[4..12]);
+        Content = new RoomContent(data[13..]);
     }
 
     /// <summary>
@@ -79,7 +92,7 @@ public class RoomMessage
     public static bool Verify(ReadOnlySpan<byte> utf8)
     {
         if (utf8.Length < 13) return false;
-        var result = RoomVerb.Verify(utf8.Slice(0, 3)) && RoomChannel.Verify(utf8.Slice(4, 8)) && utf8[3] == ' ' && utf8[12] == '\n';
+        var result = RoomVerb.Verify(utf8[..3]) && RoomChannel.Verify(utf8[4..12]) && utf8[3] == ' ' && utf8[12] == '\n';
         return result;
     }
 
@@ -91,7 +104,7 @@ public class RoomMessage
     public static bool Verify(ReadOnlySpan<char> @string)
     {
         if (@string.Length < 13) return false;
-        var result = RoomVerb.Verify(@string.Slice(0, 3)) && RoomChannel.Verify(@string.Slice(4, 8)) && @string[3] == ' ' && @string[12] == '\n';
+        var result = RoomVerb.Verify(@string[..3]) && RoomChannel.Verify(@string[4..12]) && @string[3] == ' ' && @string[12] == '\n';
         return result;
     }
 
