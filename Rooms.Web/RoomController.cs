@@ -11,7 +11,7 @@ public class RoomController : ControllerBase
 
     public static List<Room> Rooms { get; private set; } = new();
     public static int Buffering = 512 * 1024 * 1024;
-    public static int BufferingUsage => Rooms.Sum(x => x.Hub.Sockets.Sum(x => x.SendBuffer.Count + x.ReceiveBuffer.Count));
+    public static int BufferingUsage => Rooms.Sum(x => x.Hub.Sockets.Cast<WebRoomSocket>().Sum(x => x.SendBuffer.Count + x.ReceiveBuffer.Count));
 
     [HttpGet]
     public IActionResult GetAll([FromQuery] string? hint = null)
@@ -53,8 +53,8 @@ public class RoomController : ControllerBase
             room.RunAsync(TimeSpan.FromSeconds(16));
             if (room.Count < room.Slots && room.Pass == pass)
             {
-                var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync(RoomSocket.Protocol);
-                var rsocket = new RoomSocket(wsocket, buffering);
+                var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync(WebRoomSocket.Protocol);
+                var rsocket = new WebRoomSocket(wsocket, buffering);
                 await room.JoinAsync(rsocket, pass);
             }
         }

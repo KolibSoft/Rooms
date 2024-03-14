@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 
 namespace KolibSoft.Rooms.Core;
 
@@ -11,36 +12,32 @@ public class RoomHub
     /// <summary>
     /// The current hub participants.
     /// </summary>
-    public RoomSocket[] Sockets { get; private set; } = Array.Empty<RoomSocket>();
+    public ImmutableList<IRoomSocket> Sockets { get; private set; } = [];
 
     /// <summary>
     /// The messages to send with its author.
     /// </summary>
-    public ConcurrentQueue<(RoomSocket author, RoomMessage message)> Messages { get; } = new();
+    public ConcurrentQueue<(IRoomSocket author, RoomMessage message)> Messages { get; } = new();
 
     /// <summary>
     /// Starts to receive the incoming socket messages while it is alive. Use a delay of 100ms between messages.
     /// </summary>
     /// <param name="socket">A conncted socket</param>
     /// <returns></returns>
-    public async Task ListenAsync(RoomSocket socket)
+    public async Task ListenAsync(IRoomSocket socket)
     {
-        Sockets = Sockets.Append(socket).ToArray();
+        Sockets = Sockets.Add(socket);
         while (socket.IsAlive)
         {
-            RoomMessage? message = null;
             try
             {
-                message = await socket.ReceiveAsync();
+                var message = await socket.ReceiveAsync();
+                Messages.Enqueue((socket, message));
             }
             catch { }
-            if (message != null)
-            {
-                Messages.Enqueue((socket, message));
-                await Task.Delay(100);
-            }
+            await Task.Delay(100);
         }
-        Sockets = Sockets.Where(x => x != socket).ToArray();
+        Sockets = Sockets.Remove(socket);
     }
 
     /// <summary>
@@ -51,10 +48,10 @@ public class RoomHub
     {
         while (Sockets.Any())
         {
-            while (Messages.TryDequeue(out (RoomSocket, RoomMessage) msg))
+            while (Messages.TryDequeue(out (IRoomSocket, RoomMessage) msg))
             {
-                (RoomSocket author, RoomMessage message) = msg;
-                if (message.Channel == RoomChannel.Loopback)
+                (IRoomSocket author, RoomMessage message) = msg;
+                if (author.IsAlive && message.Channel == RoomChannel.Loopback)
                     try
                     {
                         await author.SendAsync(message);
@@ -65,7 +62,7 @@ public class RoomHub
                     var ochannel = message.Channel;
                     var hash = author.GetHashCode();
                     foreach (var socket in Sockets)
-                        if (socket != author)
+                        if (socket != author && socket.IsAlive)
                         {
                             var channel = RoomChannel.Parse($"{hash ^ socket.GetHashCode():x8}");
                             message.Channel = channel;
@@ -82,7 +79,7 @@ public class RoomHub
                     var hash = author.GetHashCode();
                     var target = message.Channel ^ hash;
                     var socket = Sockets.FirstOrDefault(x => x.GetHashCode() == target);
-                    if (socket != null)
+                    if (socket != null && socket.IsAlive)
                         try
                         {
                             await socket.SendAsync(message);
