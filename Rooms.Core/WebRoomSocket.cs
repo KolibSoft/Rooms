@@ -41,9 +41,13 @@ public class WebRoomSocket : IRoomSocket
             await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
             throw new IOException("Message is too big");
         }
+        if (!message.Validate())
+        {
+            await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
+            throw new FormatException($"Invalid message format: {message}");
+        }
         message.CopyTo(SendBuffer);
         var data = SendBuffer.Slice(0, message.Length);
-        // TODO: Handle message fragmentation
         await Socket.SendAsync(data, WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
@@ -54,30 +58,24 @@ public class WebRoomSocket : IRoomSocket
     /// <exception cref="IOException"></exception>
     public async Task<RoomMessage> ReceiveAsync()
     {
-        // TODO: Handle message fragmentation
         var result = await Socket.ReceiveAsync(ReceiveBuffer, CancellationToken.None);
         var data = ReceiveBuffer.Slice(0, result.Count);
         if (result.MessageType == WebSocketMessageType.Close)
         {
             await Socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
-            return new RoomMessage();
-        }
-        if (result.MessageType == WebSocketMessageType.Binary)
-        {
-            await Socket.CloseOutputAsync(WebSocketCloseStatus.InvalidMessageType, "Only text messages are allowed", CancellationToken.None);
-            throw new IOException("Invalid message type received");
+            return null!;
         }
         if (!result.EndOfMessage)
         {
-            await Socket.CloseOutputAsync(WebSocketCloseStatus.MessageTooBig, $"Max allowed message size: {ReceiveBuffer.Count}", CancellationToken.None);
+            await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
             throw new IOException("Too big message received");
         }
-        if (!RoomMessage.Verify(data))
-        {
-            await Socket.CloseOutputAsync(WebSocketCloseStatus.ProtocolError, "Invalid message format", CancellationToken.None);
-            throw new IOException("Invalid message received");
-        }
         var message = new RoomMessage(data.ToArray());
+        if (!message.Validate())
+        {
+            await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
+            throw new FormatException($"Invalid message received: {message}");
+        }
         return message;
     }
 

@@ -14,15 +14,15 @@ public class TcpRoomSocket : IRoomSocket
 
     public async Task SendAsync(RoomMessage message)
     {
-        if (!message.Validate())
-        {
-            Client.Close();
-            throw new FormatException($"Invalid message format: {message}");
-        }
         if (message.Length > SendBuffer.Count)
         {
             Client.Close();
             throw new IOException("Message is too big");
+        }
+        if (!message.Validate())
+        {
+            Client.Close();
+            throw new FormatException($"Invalid message format: {message}");
         }
         message.CopyTo(SendBuffer);
         var data = SendBuffer.Slice(0, message.Length);
@@ -37,14 +37,14 @@ public class TcpRoomSocket : IRoomSocket
         if (stream.DataAvailable)
         {
             Client.Close();
-            throw new IOException("Message is too big");
+            throw new IOException("Too big message received");
         }
         var data = ReceiveBuffer.Slice(0, count);
         var message = new RoomMessage(data);
         if (!message.Validate())
         {
             Client.Close();
-            throw new FormatException($"Invalid message format: {message}");
+            throw new FormatException($"Invalid message received: {message}");
         }
         return message;
     }
