@@ -43,6 +43,7 @@ public class WebRoomSocket : IRoomSocket
         }
         message.CopyTo(SendBuffer);
         var data = SendBuffer.Slice(0, message.Length);
+        // TODO: Handle message fragmentation
         await Socket.SendAsync(data, WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
@@ -53,6 +54,7 @@ public class WebRoomSocket : IRoomSocket
     /// <exception cref="IOException"></exception>
     public async Task<RoomMessage> ReceiveAsync()
     {
+        // TODO: Handle message fragmentation
         var result = await Socket.ReceiveAsync(ReceiveBuffer, CancellationToken.None);
         var data = ReceiveBuffer.Slice(0, result.Count);
         if (result.MessageType == WebSocketMessageType.Close)

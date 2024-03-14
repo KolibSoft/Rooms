@@ -2,14 +2,15 @@ using System.Net.Sockets;
 
 namespace KolibSoft.Rooms.Core;
 
-public class UdpRoomSocket : IRoomSocket
+public class TcpRoomSocket : IRoomSocket
 {
 
-    public UdpClient Client { get; }
+    public TcpClient Client { get; }
 
-    public bool IsAlive => true;
+    public bool IsAlive => Client.Connected;
 
     public ArraySegment<byte> SendBuffer { get; }
+    public ArraySegment<byte> ReceiveBuffer { get; }
 
     public async Task SendAsync(RoomMessage message)
     {
@@ -17,27 +18,28 @@ public class UdpRoomSocket : IRoomSocket
             throw new IOException("Message is too big");
         message.CopyTo(SendBuffer);
         var data = SendBuffer.Slice(0, message.Length);
+        var stream = Client.GetStream();
         // TODO: Handle message fragmentation
-        await Client.SendAsync(data);
+        await stream.WriteAsync(SendBuffer);
     }
 
     public async Task<RoomMessage> ReceiveAsync()
     {
+        var stream = Client.GetStream();
         // TODO: Handle message fragmentation
-        var result = await Client.ReceiveAsync();
-        if (!RoomMessage.Verify(result.Buffer))
-            throw new IOException("Invalid message received");
-        var message = new RoomMessage(result.Buffer);
+        var count = await stream.ReadAsync(ReceiveBuffer);
+        var data = ReceiveBuffer.Slice(0, count);
+        var message = new RoomMessage(data);
         return message;
     }
 
-    public UdpRoomSocket(UdpClient client, ArraySegment<byte> sendBuffer)
+    public TcpRoomSocket(TcpClient client, ArraySegment<byte> sendBuffer)
     {
         Client = client;
         SendBuffer = sendBuffer;
     }
 
-    public UdpRoomSocket(UdpClient client, int bufferingSize = 1024)
+    public TcpRoomSocket(TcpClient client, int bufferingSize = 1024)
     {
         Client = client;
         SendBuffer = new byte[bufferingSize];
