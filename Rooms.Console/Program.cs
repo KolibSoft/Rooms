@@ -62,12 +62,23 @@ public static class Program
             }
             else if (mode == "Server")
             {
+                var hub = new RoomHub();
+                var transmit = hub.TransmitAsync();
                 var port = EnsureInteger(() => args.GetArgument("--port"));
+                var backlog = EnsureInteger(() => args.GetArgument("--backlog"));
                 var listener = new TcpListener(IPAddress.Any, port);
-                listener.Start(1);
-                var client = await listener.AcceptTcpClientAsync();
-                var socket = new TcpRoomSocket(client);
-                Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
+                listener.Start(backlog);
+                System.Console.WriteLine("TCP Room Server started");
+                var i = 0;
+                while (i < backlog)
+                {
+                    var client = await listener.AcceptTcpClientAsync();
+                    var socket = new TcpRoomSocket(client);
+                    _ = hub.ListenAsync(socket);
+                    if (hub.Sockets.Count == 1) transmit = hub.TransmitAsync();
+                    i++;
+                }
+                await transmit;
             }
         }
     }
