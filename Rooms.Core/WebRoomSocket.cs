@@ -5,7 +5,7 @@ namespace KolibSoft.Rooms.Core;
 /// <summary>
 /// A buffering web socket to send and receive messages asynchronously.
 /// </summary>
-public class RoomSocket
+public class WebRoomSocket : IRoomSocket
 {
 
     /// <summary>
@@ -85,7 +85,7 @@ public class RoomSocket
     /// <param name="socket">A connected Web Socket.</param>
     /// <param name="sendBuffer">Send buffer.</param>
     /// <param name="receiveBuffer">Receive buffer.</param>
-    public RoomSocket(WebSocket socket, ArraySegment<byte> sendBuffer, ArraySegment<byte> receiveBuffer)
+    public WebRoomSocket(WebSocket socket, ArraySegment<byte> sendBuffer, ArraySegment<byte> receiveBuffer)
     {
         Socket = socket;
         SendBuffer = sendBuffer;
@@ -97,7 +97,7 @@ public class RoomSocket
     /// </summary>
     /// <param name="socket">A connected Web Socket.</param>
     /// <param name="bufferingSize">Buffering size to send and receive messages.</param>
-    public RoomSocket(WebSocket socket, int bufferingSize = 1024)
+    public WebRoomSocket(WebSocket socket, int bufferingSize = 1024)
     {
         Socket = socket;
         SendBuffer = new byte[bufferingSize];

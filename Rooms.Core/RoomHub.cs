@@ -12,34 +12,30 @@ public class RoomHub
     /// <summary>
     /// The current hub participants.
     /// </summary>
-    public ImmutableList<RoomSocket> Sockets { get; private set; } = [];
+    public ImmutableList<IRoomSocket> Sockets { get; private set; } = [];
 
     /// <summary>
     /// The messages to send with its author.
     /// </summary>
-    public ConcurrentQueue<(RoomSocket author, RoomMessage message)> Messages { get; } = new();
+    public ConcurrentQueue<(IRoomSocket author, RoomMessage message)> Messages { get; } = new();
 
     /// <summary>
     /// Starts to receive the incoming socket messages while it is alive. Use a delay of 100ms between messages.
     /// </summary>
     /// <param name="socket">A conncted socket</param>
     /// <returns></returns>
-    public async Task ListenAsync(RoomSocket socket)
+    public async Task ListenAsync(IRoomSocket socket)
     {
         Sockets = Sockets.Add(socket);
         while (socket.IsAlive)
         {
-            RoomMessage? message = null;
             try
             {
-                message = await socket.ReceiveAsync();
+                var message = await socket.ReceiveAsync();
+                Messages.Enqueue((socket, message));
             }
             catch { }
-            if (message != null)
-            {
-                Messages.Enqueue((socket, message));
-                await Task.Delay(100);
-            }
+            await Task.Delay(100);
         }
         Sockets = Sockets.Remove(socket);
     }
@@ -52,9 +48,9 @@ public class RoomHub
     {
         while (Sockets.Any())
         {
-            while (Messages.TryDequeue(out (RoomSocket, RoomMessage) msg))
+            while (Messages.TryDequeue(out (IRoomSocket, RoomMessage) msg))
             {
-                (RoomSocket author, RoomMessage message) = msg;
+                (IRoomSocket author, RoomMessage message) = msg;
                 if (message.Channel == RoomChannel.Loopback)
                     try
                     {
