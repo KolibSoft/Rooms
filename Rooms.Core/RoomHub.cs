@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 
 namespace KolibSoft.Rooms.Core;
 
@@ -11,7 +12,7 @@ public class RoomHub
     /// <summary>
     /// The current hub participants.
     /// </summary>
-    public RoomSocket[] Sockets { get; private set; } = Array.Empty<RoomSocket>();
+    public ImmutableList<RoomSocket> Sockets { get; private set; } = [];
 
     /// <summary>
     /// The messages to send with its author.
@@ -25,7 +26,7 @@ public class RoomHub
     /// <returns></returns>
     public async Task ListenAsync(RoomSocket socket)
     {
-        Sockets = Sockets.Append(socket).ToArray();
+        Sockets = Sockets.Add(socket);
         while (socket.IsAlive)
         {
             RoomMessage? message = null;
@@ -40,7 +41,7 @@ public class RoomHub
                 await Task.Delay(100);
             }
         }
-        Sockets = Sockets.Where(x => x != socket).ToArray();
+        Sockets = Sockets.Remove(socket);
     }
 
     /// <summary>
