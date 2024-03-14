@@ -5,7 +5,7 @@ namespace KolibSoft.Rooms.Core;
 /// <summary>
 /// A buffering web socket to send and receive messages asynchronously.
 /// </summary>
-public class RoomSocket
+public class WebRoomSocket : IRoomSocket
 {
 
     /// <summary>
@@ -41,6 +41,11 @@ public class RoomSocket
             await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
             throw new IOException("Message is too big");
         }
+        if (!message.Validate())
+        {
+            await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
+            throw new FormatException($"Invalid message format: {message}");
+        }
         message.CopyTo(SendBuffer);
         var data = SendBuffer.Slice(0, message.Length);
         await Socket.SendAsync(data, WebSocketMessageType.Text, true, CancellationToken.None);
@@ -58,24 +63,19 @@ public class RoomSocket
         if (result.MessageType == WebSocketMessageType.Close)
         {
             await Socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
-            return new RoomMessage();
-        }
-        if (result.MessageType == WebSocketMessageType.Binary)
-        {
-            await Socket.CloseOutputAsync(WebSocketCloseStatus.InvalidMessageType, "Only text messages are allowed", CancellationToken.None);
-            throw new IOException("Invalid message type received");
+            return null!;
         }
         if (!result.EndOfMessage)
         {
-            await Socket.CloseOutputAsync(WebSocketCloseStatus.MessageTooBig, $"Max allowed message size: {ReceiveBuffer.Count}", CancellationToken.None);
+            await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
             throw new IOException("Too big message received");
         }
-        if (!RoomMessage.Verify(data))
-        {
-            await Socket.CloseOutputAsync(WebSocketCloseStatus.ProtocolError, "Invalid message format", CancellationToken.None);
-            throw new IOException("Invalid message received");
-        }
         var message = new RoomMessage(data.ToArray());
+        if (!message.Validate())
+        {
+            await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
+            throw new FormatException($"Invalid message received: {message}");
+        }
         return message;
     }
 
@@ -85,7 +85,7 @@ public class RoomSocket
     /// <param name="socket">A connected Web Socket.</param>
     /// <param name="sendBuffer">Send buffer.</param>
     /// <param name="receiveBuffer">Receive buffer.</param>
-    public RoomSocket(WebSocket socket, ArraySegment<byte> sendBuffer, ArraySegment<byte> receiveBuffer)
+    public WebRoomSocket(WebSocket socket, ArraySegment<byte> sendBuffer, ArraySegment<byte> receiveBuffer)
     {
         Socket = socket;
         SendBuffer = sendBuffer;
@@ -97,7 +97,7 @@ public class RoomSocket
     /// </summary>
     /// <param name="socket">A connected Web Socket.</param>
     /// <param name="bufferingSize">Buffering size to send and receive messages.</param>
-    public RoomSocket(WebSocket socket, int bufferingSize = 1024)
+    public WebRoomSocket(WebSocket socket, int bufferingSize = 1024)
     {
         Socket = socket;
         SendBuffer = new byte[bufferingSize];

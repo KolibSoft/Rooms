@@ -11,10 +11,10 @@ public class Room(int code, int slots = 4, string? pass = null, string? tag = nu
     public string? Tag { get; } = tag;
 
     public RoomHub Hub { get; } = new();
-    public int Count => Hub.Sockets.Length;
+    public int Count => Hub.Sockets.Count;
     public bool IsAlive { get; private set; } = false;
 
-    public async Task JoinAsync(RoomSocket socket, string? pass)
+    public async Task JoinAsync(IRoomSocket socket, string? pass)
     {
         if (Count >= Slots || Pass != pass)
             throw new InvalidOperationException();

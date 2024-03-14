@@ -1,4 +1,4 @@
-import { RoomProtocol, parseRoomMessage, RoomLoopback, RoomBroadcast, RoomMessage } from "https://kolibsoft.github.io/rooms/lib/room.js";
+import { RoomProtocol, parseRoomMessage, RoomLoopback, RoomBroadcast, RoomMessage } from "./rooms.js";
 
 let socket = null;
 let logs = [];

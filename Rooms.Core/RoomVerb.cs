@@ -15,6 +15,8 @@ public struct RoomVerb(ArraySegment<byte> utf8)
     /// </summary>
     public ArraySegment<byte> Data { get; } = utf8;
 
+    public int Length => Data.Count;
+
     /// <summary>
     /// Gets the string representation of the verb.
     /// </summary>

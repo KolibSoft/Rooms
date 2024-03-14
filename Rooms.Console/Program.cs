@@ -1,78 +1,173 @@
-﻿using System.Net.WebSockets;
+﻿using System.Net;
+using System.Net.Sockets;
+using System.Net.WebSockets;
 using KolibSoft.Rooms.Core;
 
-var code = GetArg(0, "Enter Room Code (random): ")?.Substring(0, 8);
-if (string.IsNullOrEmpty(code)) code = Random.Shared.Next().ToString().Substring(0, 8);
+namespace KolibSoft.Rooms.Console;
 
-var slots = GetArg(1, "Enter Room Slots (4): ");
-var pass = GetArg(2, "Enter Room Pass (optional): ");
-var tag = GetArg(2, "Enter Room Tag (optional): ");
-Console.WriteLine($"Room Code: {code}");
-
-var client = new ClientWebSocket();
-client.Options.AddSubProtocol(RoomSocket.Protocol);
-await client.ConnectAsync(new Uri($"wss://krooms.azurewebsites.net/api/rooms/join?code={code}&slots={slots ?? ""}&pass={pass ?? ""}&tag={tag ?? ""}"), CancellationToken.None);
-var socket = new RoomSocket(client);
-
-_ = Task.Run(async () =>
+public static class Program
 {
-    while (socket.IsAlive)
+
+    public static string? Prompt(string hint)
     {
-        RoomMessage? message = null;
-        try
-        {
-            message = await socket.ReceiveAsync();
-        }
-        catch { }
-        if (message != null)
-        {
-            Console.SetCursorPosition(0, Console.CursorTop);
-            Console.WriteLine($"{message.Verb} [{message.Channel}] {message.Content}");
-            Console.Write("> ");
-        }
-        await Task.Delay(100);
+        System.Console.Write(hint);
+        var input = System.Console.ReadLine();
+        return input;
     }
-});
 
-while (socket.IsAlive)
-{
-    Console.Write("> ");
-    var input = Console.ReadLine();
-    if (input != null)
+    public static string GetArgument(this string[] args, string name, string? hint = null, string? def = null)
     {
-        var @string = input.AsMemory();
-        if (@string.Length < 13) { Console.WriteLine("Expected: <verb> <channel> <content>"); continue; }
-        if (!RoomVerb.Verify(@string.Slice(0, 3).Span)) { Console.WriteLine("Expected a valid verb"); continue; }
-        if (!RoomChannel.Verify(@string.Slice(4, 8).Span)) { Console.WriteLine("Expected a valid channel"); continue; }
-        var message = new RoomMessage
+        var arg = args.FirstOrDefault(x => x.StartsWith(name));
+        if (arg != null)
         {
-            Verb = RoomVerb.Parse(@string.Slice(0, 3).Span),
-            Channel = RoomChannel.Parse(@string.Slice(4, 8).Span),
-            Content = RoomContent.Parse(@string.Slice(13).Span)
-        };
-        try
-        {
-            await socket.SendAsync(message);
+            if (arg.Length == name.Length) return arg;
+            if (arg[name.Length] == '=') return arg.Substring(name.Length + 1);
         }
-        catch { }
+        string? input = null;
+        while (input == null) input = Prompt(hint ?? $"{name}: ") ?? def;
+        return input;
     }
-}
 
-string? Prompt(string hint)
-{
-    Console.Write(hint);
-    var input = Console.ReadLine();
-    return input;
-}
-
-string? GetArg(int index, string? hint)
-{
-    string? arg = null;
-    if (args.Length > index)
+    public static int EnsureInteger(Func<string> func, int min = int.MinValue, int max = int.MaxValue)
     {
-        arg = args[index];
-        return arg;
+        if (max < min)
+            throw new ArgumentException("Min value and max value overlaps");
+        while (true) if (int.TryParse(func(), out int integer) && integer >= min && integer <= max) return integer;
     }
-    arg = Prompt(hint ?? "");
-    return arg;
+
+    public static Uri EnsureUri(Func<string> func)
+    {
+        while (true) if (Uri.TryCreate(func(), UriKind.RelativeOrAbsolute, out Uri? uri)) return uri;
+    }
+
+    public static string GetOption(this string[] args, string name, string[] options, string? hint = null)
+    {
+        if (!options.Any())
+            throw new ArgumentException("Options can not be empty");
+        while (true)
+        {
+            var input = args.GetArgument(name, hint, null);
+            if (options.Contains(input)) return input;
+        }
+    }
+
+    public static async Task Main(params string[] args)
+    {
+        var impl = args.GetOption("--impl", ["TCP", "WEB"]);
+        if (impl == "TCP")
+        {
+            var mode = args.GetOption("--mode", ["Client", "Server"]);
+            if (mode == "Client")
+            {
+                var host = args.GetArgument("--host");
+                var port = EnsureInteger(() => args.GetArgument("--port"));
+                var client = new TcpClient();
+                await client.ConnectAsync(host, port);
+                var socket = new TcpRoomSocket(client);
+                Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
+            }
+            else if (mode == "Server")
+            {
+
+                var port = EnsureInteger(() => args.GetArgument("--port"));
+                var backlog = EnsureInteger(() => args.GetArgument("--backlog"));
+                var listener = new TcpListener(IPAddress.Any, port);
+                listener.Start(backlog);
+                var hub = new RoomHub();
+                var transmit = hub.TransmitAsync();
+                System.Console.WriteLine("TCP Room Server started");
+                var i = 0;
+                while (i < backlog)
+                {
+                    var client = await listener.AcceptTcpClientAsync();
+                    var socket = new TcpRoomSocket(client);
+                    _ = hub.ListenAsync(socket);
+                    if (hub.Sockets.Count == 1) transmit = hub.TransmitAsync();
+                    i++;
+                }
+                await transmit;
+            }
+        }
+        else if (impl == "WEB")
+        {
+            var mode = args.GetOption("--mode", ["Client", "Server"]);
+            if (mode == "Client")
+            {
+                var uri = EnsureUri(() => args.GetArgument("--uri"));
+                var client = new ClientWebSocket();
+                client.Options.AddSubProtocol(WebRoomSocket.Protocol);
+                await client.ConnectAsync(uri, default);
+                var socket = new WebRoomSocket(client);
+                Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
+            }
+            else if (mode == "Server")
+            {
+                var prefix = args.GetArgument("--prefix");
+                var listener = new HttpListener();
+                listener.Prefixes.Add(prefix);
+                listener.Start();
+                var hub = new RoomHub();
+                var transmit = hub.TransmitAsync();
+                System.Console.WriteLine("WEB Room Server started");
+                while (listener.IsListening)
+                {
+                    var context = await listener.GetContextAsync();
+                    if (!context.Request.IsWebSocketRequest)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        context.Response.Close();
+                        continue;
+                    }
+                    var client = await context.AcceptWebSocketAsync(WebRoomSocket.Protocol);
+                    var socket = new WebRoomSocket(client.WebSocket);
+                    _ = hub.ListenAsync(socket);
+                    if (hub.Sockets.Count == 1) transmit = hub.TransmitAsync();
+                }
+                await transmit;
+            }
+        }
+    }
+
+    public static async Task ReceiveAsync(IRoomSocket socket)
+    {
+        while (socket.IsAlive)
+        {
+            try
+            {
+                var message = await socket.ReceiveAsync();
+                System.Console.SetCursorPosition(0, System.Console.CursorTop);
+                System.Console.WriteLine($"{message.Verb} [{message.Channel}] {message.Content}");
+                System.Console.Write("> ");
+            }
+            catch { }
+            await Task.Delay(100);
+        }
+    }
+
+    public static async Task SendAsync(IRoomSocket socket)
+    {
+        while (socket.IsAlive)
+        {
+            var input = Prompt("> ");
+            if (input != null)
+            {
+                var @string = input.AsMemory();
+                if (@string.Length < 13) { System.Console.WriteLine("Expected: <verb> <channel> <content>"); continue; }
+                if (!RoomVerb.Verify(@string.Slice(0, 3).Span)) { System.Console.WriteLine("Expected a valid verb"); continue; }
+                if (!RoomChannel.Verify(@string.Slice(4, 8).Span)) { System.Console.WriteLine("Expected a valid channel"); continue; }
+                var message = new RoomMessage
+                {
+                    Verb = RoomVerb.Parse(@string.Slice(0, 3).Span),
+                    Channel = RoomChannel.Parse(@string.Slice(4, 8).Span),
+                    Content = RoomContent.Parse(@string.Slice(13).Span)
+                };
+                try
+                {
+                    await socket.SendAsync(message);
+                }
+                catch { }
+            }
+        }
+    }
+
 }
