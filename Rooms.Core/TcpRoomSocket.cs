@@ -20,7 +20,7 @@ public class TcpRoomSocket : IRoomSocket
         var data = SendBuffer.Slice(0, message.Length);
         var stream = Client.GetStream();
         // TODO: Handle message fragmentation
-        await stream.WriteAsync(SendBuffer);
+        await stream.WriteAsync(data);
     }
 
     public async Task<RoomMessage> ReceiveAsync()
@@ -33,16 +33,18 @@ public class TcpRoomSocket : IRoomSocket
         return message;
     }
 
-    public TcpRoomSocket(TcpClient client, ArraySegment<byte> sendBuffer)
+    public TcpRoomSocket(TcpClient client, ArraySegment<byte> sendBuffer, ArraySegment<byte> receiveBuffer)
     {
         Client = client;
         SendBuffer = sendBuffer;
+        ReceiveBuffer = receiveBuffer;
     }
 
     public TcpRoomSocket(TcpClient client, int bufferingSize = 1024)
     {
         Client = client;
         SendBuffer = new byte[bufferingSize];
+        ReceiveBuffer = new byte[bufferingSize];
     }
 
 }
