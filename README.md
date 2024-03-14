@@ -3,12 +3,12 @@
 - [Room Protocol](#room-protocol)
 - [Room Hub Routing](#room-hub-routing)
 - [Room Channel Conversion](#room-channel-conversion)
-- [Javascript Utils File](https://kolibsoft.github.io/rooms/lib/room.js)
+- [Javascript Utils File](./Rooms.Web/wwwroot/rooms.js)
 - [Room Test Server](https://krooms.azurewebsites.net/)
 
 ## Room ##
 
-A **Room** is a connection point where participants can send and receive messages. Once connected, a participant has the right to remain in the **Room** and cannot be removed, however the rest of the participants can agree to ignore them.
+A **Room** is a connection point where participants can send and receive messages. Once connected, a participant has the right to remain in the **Room** and cannot be removed, however the rest of the participants can agree to ignore them. Support TCP and Web Socket based connections.
 
 ## Room Protocol #
 

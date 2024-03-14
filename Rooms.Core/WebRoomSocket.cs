@@ -9,6 +9,11 @@ public class WebRoomSocket : IRoomSocket
 {
 
     /// <summary>
+    /// Disposed flag
+    /// </summary>
+    private bool disposed;
+
+    /// <summary>
     /// The underlying provided Web Socket.
     /// </summary>
     public WebSocket Socket { get; }
@@ -21,21 +26,23 @@ public class WebRoomSocket : IRoomSocket
     /// <summary>
     /// The underlying Send Buffer.
     /// </summary>
-    public ArraySegment<byte> SendBuffer { get; }
+    public ArraySegment<byte> SendBuffer { get; private set; }
 
     /// <summary>
     /// The underlying Receive Buffer.
     /// </summary>
-    public ArraySegment<byte> ReceiveBuffer { get; }
+    public ArraySegment<byte> ReceiveBuffer { get; private set; }
 
     /// <summary>
-    /// Send a message asynchronously.
+    /// Send a message asynchronously. Close the underlying Web Socket if an invalid message is send.
     /// </summary>
     /// <param name="message">The message to send.</param>
     /// <returns></returns>
     /// <exception cref="IOException"></exception>
+    /// <exception cref="FormatException"></exception>
     public async Task SendAsync(RoomMessage message)
     {
+        ObjectDisposedException.ThrowIf(disposed, this);
         if (message.Length > SendBuffer.Count)
         {
             await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, CancellationToken.None);
@@ -58,6 +65,7 @@ public class WebRoomSocket : IRoomSocket
     /// <exception cref="IOException"></exception>
     public async Task<RoomMessage> ReceiveAsync()
     {
+        ObjectDisposedException.ThrowIf(disposed, this);
         var result = await Socket.ReceiveAsync(ReceiveBuffer, CancellationToken.None);
         var data = ReceiveBuffer.Slice(0, result.Count);
         if (result.MessageType == WebSocketMessageType.Close)
@@ -77,6 +85,23 @@ public class WebRoomSocket : IRoomSocket
             throw new FormatException($"Invalid message received: {message}");
         }
         return message;
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing) Socket.Dispose();
+            ReceiveBuffer = null!;
+            SendBuffer = null!;
+            disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>
