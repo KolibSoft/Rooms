@@ -1,18 +1,9 @@
-﻿using System.Net.WebSockets;
+﻿using System.Net.Sockets;
+using System.Net.WebSockets;
 using KolibSoft.Rooms.Core;
 
-var code = GetArg(0, "Enter Room Code (random): ")?.Substring(0, 8);
-if (string.IsNullOrEmpty(code)) code = Random.Shared.Next().ToString().Substring(0, 8);
-
-var slots = GetArg(1, "Enter Room Slots (4): ");
-var pass = GetArg(2, "Enter Room Pass (optional): ");
-var tag = GetArg(2, "Enter Room Tag (optional): ");
-Console.WriteLine($"Room Code: {code}");
-
-var client = new ClientWebSocket();
-client.Options.AddSubProtocol(RoomSocket.Protocol);
-await client.ConnectAsync(new Uri($"wss://krooms.azurewebsites.net/api/rooms/join?code={code}&slots={slots ?? ""}&pass={pass ?? ""}&tag={tag ?? ""}"), CancellationToken.None);
-var socket = new RoomSocket(client);
+IRoomSocket socket = null!;
+await UdpVersion();
 
 _ = Task.Run(async () =>
 {
@@ -56,6 +47,37 @@ while (socket.IsAlive)
         }
         catch { }
     }
+}
+
+async Task UdpVersion()
+{
+
+    var port = GetArg(0, "Enter Local Port (random): ");
+    if (string.IsNullOrEmpty(port)) port = Random.Shared.Next().ToString().Substring(0, 8);
+
+    var host = GetArg(0, "Enter Remote host: ")!;
+    var remote = GetArg(0, "Enter Remote Port: ")!;
+
+    var client = new UdpClient(int.Parse(port));
+    client.Connect(host, int.Parse(remote));
+    socket = new UdpRoomSocket(client);
+}
+
+async Task WebVersion()
+{
+
+    var code = GetArg(0, "Enter Room Code (random): ")?.Substring(0, 8);
+    if (string.IsNullOrEmpty(code)) code = Random.Shared.Next().ToString().Substring(0, 8);
+
+    var slots = GetArg(1, "Enter Room Slots (4): ");
+    var pass = GetArg(2, "Enter Room Pass (optional): ");
+    var tag = GetArg(2, "Enter Room Tag (optional): ");
+    Console.WriteLine($"Room Code: {code}");
+
+    var client = new ClientWebSocket();
+    client.Options.AddSubProtocol(WebRoomSocket.Protocol);
+    await client.ConnectAsync(new Uri($"wss://krooms.azurewebsites.net/api/rooms/join?code={code}&slots={slots ?? ""}&pass={pass ?? ""}&tag={tag ?? ""}"), CancellationToken.None);
+    socket = new WebRoomSocket(client);
 }
 
 string? Prompt(string hint)
