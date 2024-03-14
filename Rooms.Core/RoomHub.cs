@@ -51,7 +51,7 @@ public class RoomHub
             while (Messages.TryDequeue(out (IRoomSocket, RoomMessage) msg))
             {
                 (IRoomSocket author, RoomMessage message) = msg;
-                if (message.Channel == RoomChannel.Loopback)
+                if (author.IsAlive && message.Channel == RoomChannel.Loopback)
                     try
                     {
                         await author.SendAsync(message);
@@ -62,7 +62,7 @@ public class RoomHub
                     var ochannel = message.Channel;
                     var hash = author.GetHashCode();
                     foreach (var socket in Sockets)
-                        if (socket != author)
+                        if (socket != author && socket.IsAlive)
                         {
                             var channel = RoomChannel.Parse($"{hash ^ socket.GetHashCode():x8}");
                             message.Channel = channel;
@@ -79,7 +79,7 @@ public class RoomHub
                     var hash = author.GetHashCode();
                     var target = message.Channel ^ hash;
                     var socket = Sockets.FirstOrDefault(x => x.GetHashCode() == target);
-                    if (socket != null)
+                    if (socket != null && socket.IsAlive)
                         try
                         {
                             await socket.SendAsync(message);

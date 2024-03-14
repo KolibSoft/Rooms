@@ -26,7 +26,7 @@ public class RoomMessage
     /// <summary>
     /// The message total size in bytes (format blanks included).
     /// </summary>
-    public int Length => Verb.Data.Count + Channel.Data.Count + Content.Data.Count + 2;
+    public int Length => Verb.Length + Channel.Length + Content.Length + 2;
 
     /// <summary>
     /// Copies the message into a data buffer.
