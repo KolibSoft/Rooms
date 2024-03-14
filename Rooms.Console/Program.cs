@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 using KolibSoft.Rooms.Core;
 
 namespace KolibSoft.Rooms.Console;
@@ -34,6 +35,11 @@ public static class Program
         while (true) if (int.TryParse(func(), out int integer) && integer >= min && integer <= max) return integer;
     }
 
+    public static Uri EnsureUri(Func<string> func)
+    {
+        while (true) if (Uri.TryCreate(func(), UriKind.RelativeOrAbsolute, out Uri? uri)) return uri;
+    }
+
     public static string GetOption(this string[] args, string name, string[] options, string? hint = null)
     {
         if (!options.Any())
@@ -47,7 +53,7 @@ public static class Program
 
     public static async Task Main(params string[] args)
     {
-        var impl = args.GetOption("--impl", ["TCP"]);
+        var impl = args.GetOption("--impl", ["TCP", "WEB"]);
         if (impl == "TCP")
         {
             var mode = args.GetOption("--mode", ["Client", "Server"]);
@@ -62,12 +68,13 @@ public static class Program
             }
             else if (mode == "Server")
             {
-                var hub = new RoomHub();
-                var transmit = hub.TransmitAsync();
+
                 var port = EnsureInteger(() => args.GetArgument("--port"));
                 var backlog = EnsureInteger(() => args.GetArgument("--backlog"));
                 var listener = new TcpListener(IPAddress.Any, port);
                 listener.Start(backlog);
+                var hub = new RoomHub();
+                var transmit = hub.TransmitAsync();
                 System.Console.WriteLine("TCP Room Server started");
                 var i = 0;
                 while (i < backlog)
@@ -77,6 +84,44 @@ public static class Program
                     _ = hub.ListenAsync(socket);
                     if (hub.Sockets.Count == 1) transmit = hub.TransmitAsync();
                     i++;
+                }
+                await transmit;
+            }
+        }
+        else if (impl == "WEB")
+        {
+            var mode = args.GetOption("--mode", ["Client", "Server"]);
+            if (mode == "Client")
+            {
+                var uri = EnsureUri(() => args.GetArgument("--uri"));
+                var client = new ClientWebSocket();
+                client.Options.AddSubProtocol(WebRoomSocket.Protocol);
+                await client.ConnectAsync(uri, default);
+                var socket = new WebRoomSocket(client);
+                Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
+            }
+            else if (mode == "Server")
+            {
+                var prefix = args.GetArgument("--prefix");
+                var listener = new HttpListener();
+                listener.Prefixes.Add(prefix);
+                listener.Start();
+                var hub = new RoomHub();
+                var transmit = hub.TransmitAsync();
+                System.Console.WriteLine("WEB Room Server started");
+                while (listener.IsListening)
+                {
+                    var context = await listener.GetContextAsync();
+                    if (!context.Request.IsWebSocketRequest)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        context.Response.Close();
+                        continue;
+                    }
+                    var client = await context.AcceptWebSocketAsync(WebRoomSocket.Protocol);
+                    var socket = new WebRoomSocket(client.WebSocket);
+                    _ = hub.ListenAsync(socket);
+                    if (hub.Sockets.Count == 1) transmit = hub.TransmitAsync();
                 }
                 await transmit;
             }
