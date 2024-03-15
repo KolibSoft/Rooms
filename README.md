@@ -56,23 +56,23 @@ Command line options:
 Example of run a TCP Room Client:
 
 ```powershell
-> .\Rooms.Console.exe --impl=TCP --mode=Client --host=localhost --port=55000
+.\Rooms.Console.exe --impl=TCP --mode=Client --host=localhost --port=55000
 ```
 
 Example of run a TCP Room Server:
 
 ```powershell
-> .\Rooms.Console.exe --impl=TCP --mode=Server --port=55000
+.\Rooms.Console.exe --impl=TCP --mode=Server --port=55000
 ```
 
 Example of run a Web Room Client:
 
 ```powershell
-> .\Rooms.Console.exe --impl=WEB --mode=Client --uri=ws://localhost:55000/
+.\Rooms.Console.exe --impl=WEB --mode=Client --uri=ws://localhost:55000/
 ```
 
 Example of run a Web Room Server:
 
 ```powershell
-> .\Rooms.Console.exe --impl=WEB --mode=Server --prefix=http://localhost:55000/
+.\Rooms.Console.exe --impl=WEB --mode=Server --prefix=http://localhost:55000/
 ```
