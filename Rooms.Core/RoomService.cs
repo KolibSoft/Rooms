@@ -39,7 +39,7 @@ namespace KolibSoft.Rooms.Core
         public Dictionary<string, RoomConnector> Connectors { get; } = new();
 
         /// <summary>
-        /// Called on success socket connection.
+        /// Called just after success socket connection.
         /// </summary>
         /// <param name="socket">Connected socket.</param>
         protected virtual void OnConnect(IRoomSocket socket) { }
@@ -115,12 +115,12 @@ namespace KolibSoft.Rooms.Core
                 catch { }
                 await Task.Delay(100);
             }
-            socket.Dispose();
             OnDisconnect(socket);
+            socket.Dispose();
         }
 
         /// <summary>
-        /// Called on socket disconnection.
+        /// Called just before socket disconnection.
         /// </summary>
         /// <param name="socket">Disconnected socket.</param>
         protected virtual void OnDisconnect(IRoomSocket socket) { }
@@ -136,8 +136,8 @@ namespace KolibSoft.Rooms.Core
             var socket = Socket;
             if (socket?.IsAlive == true)
             {
-                socket.Dispose();
                 OnDisconnect(socket);
+                socket.Dispose();
             }
             return Task.CompletedTask;
         }
