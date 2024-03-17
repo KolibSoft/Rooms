@@ -89,6 +89,10 @@ namespace KolibSoft.Rooms.Core
             return message;
         }
 
+        /// <summary>
+        /// Internal dispose implementation.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)

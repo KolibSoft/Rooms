@@ -10,23 +10,54 @@ using System.Threading.Tasks;
 namespace KolibSoft.Rooms.Core
 {
 
-    public delegate Task<IRoomSocket> SocketConnector(string server);
+    /// <summary>
+    /// Socket implementation connection delegate.
+    /// </summary>
+    /// <param name="server">Implementation server identifier.</param>
+    /// <returns>Specific socket implementation.</returns>
+    public delegate Task<IRoomSocket> RoomConnector(string server);
 
+    /// <summary>
+    /// Manage a Room connection.
+    /// </summary>
     public class RoomService : IDisposable
     {
 
+        /// <summary>
+        /// Disposed flag.
+        /// </summary>
         private bool disposed;
-        public IRoomSocket? Socket { get; private set; }
-        public Dictionary<string, SocketConnector> Connectors { get; } = new();
 
+        /// <summary>
+        /// The underlying socket implementation.
+        /// </summary>
+        public IRoomSocket? Socket { get; private set; }
+
+        /// <summary>
+        /// Available socket implementations.
+        /// </summary>
+        public Dictionary<string, RoomConnector> Connectors { get; } = new();
+
+        /// <summary>
+        /// Called on success socket connection.
+        /// </summary>
+        /// <param name="socket">Connected socket.</param>
         protected virtual void OnConnect(IRoomSocket socket) { }
+
+        /// <summary>
+        /// Attempts to establish a connection with the relay server.
+        /// </summary>
+        /// <param name="server">Implementation server identifier.</param>
+        /// <param name="implementation">Implementation connector name.</param>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException"></exception>
         public async Task ConnectAsync(string server, string implementation)
         {
             if (disposed) throw new ObjectDisposedException(null);
             try
             {
                 await DisconnectAsync();
-                if (Connectors.TryGetValue(implementation, out SocketConnector? connector))
+                if (Connectors.TryGetValue(implementation, out RoomConnector? connector))
                 {
                     var socket = await connector.Invoke(server);
                     OnConnect(socket);
@@ -37,7 +68,18 @@ namespace KolibSoft.Rooms.Core
             catch { }
         }
 
+        /// <summary>
+        /// Called on message sent.
+        /// </summary>
+        /// <param name="message">Message sent.</param>
         protected virtual void OnMessageSent(RoomMessage message) { }
+
+        /// <summary>
+        /// Attempts to send a message.
+        /// </summary>
+        /// <param name="message">Message to send.</param>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException"></exception>
         public async Task SendAsync(RoomMessage message)
         {
             if (disposed) throw new ObjectDisposedException(null);
@@ -51,7 +93,16 @@ namespace KolibSoft.Rooms.Core
                 catch { }
         }
 
+        /// <summary>
+        /// Called on message received.
+        /// </summary>
+        /// <param name="message">Message received</param>
         protected virtual void OnMessageReceived(RoomMessage message) { }
+
+        /// <summary>
+        /// Start to listen incoming messages.
+        /// </summary>
+        /// <param name="socket">Connected socket.</param>
         private async void ListenAsync(IRoomSocket socket)
         {
             while (socket.IsAlive)
@@ -64,23 +115,37 @@ namespace KolibSoft.Rooms.Core
                 catch { }
                 await Task.Delay(100);
             }
-            OnDisconnect(socket);
             socket.Dispose();
+            OnDisconnect(socket);
         }
 
+        /// <summary>
+        /// Called on socket disconnection.
+        /// </summary>
+        /// <param name="socket">Disconnected socket.</param>
         protected virtual void OnDisconnect(IRoomSocket socket) { }
+
+        /// <summary>
+        /// Ends the connection with the relay server.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException"></exception>
         public Task DisconnectAsync()
         {
             if (disposed) throw new ObjectDisposedException(null);
             var socket = Socket;
             if (socket?.IsAlive == true)
             {
-                OnDisconnect(socket);
                 socket.Dispose();
+                OnDisconnect(socket);
             }
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Internal dispose implementation.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)
@@ -96,9 +161,24 @@ namespace KolibSoft.Rooms.Core
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Constructs a service with the generic TCP and WEB connector implementations.
+        /// </summary>
         public RoomService()
         {
-            Connectors[TCP] = async (server) =>
+            Connectors[TCP] = TcpConnector;
+            Connectors[WEB] = WebConnector;
+        }
+
+        /// <summary>
+        /// TCP implementation name.
+        /// </summary>
+        public const string TCP = "TCP";
+
+        /// <summary>
+        /// TCP implementation connector.
+        /// </summary>
+        public static readonly RoomConnector TcpConnector = async (server) =>
             {
                 var cancellation = new CancellationTokenSource();
                 cancellation.CancelAfter(TimeSpan.FromMinutes(1));
@@ -110,7 +190,16 @@ namespace KolibSoft.Rooms.Core
                 var socket = new TcpRoomSocket(client);
                 return socket;
             };
-            Connectors[WEB] = async (server) =>
+
+        /// <summary>
+        /// WEB implementation name.
+        /// </summary>
+        public const string WEB = "WEB";
+
+        /// <summary>
+        /// WEB implementation connector.
+        /// </summary>
+        public static readonly RoomConnector WebConnector = async (server) =>
             {
                 var cancellation = new CancellationTokenSource();
                 cancellation.CancelAfter(TimeSpan.FromMinutes(1));
@@ -121,10 +210,6 @@ namespace KolibSoft.Rooms.Core
                 var socket = new WebRoomSocket(client);
                 return socket;
             };
-        }
-
-        public const string TCP = "TCP";
-        public const string WEB = "WEB";
 
     }
 }
