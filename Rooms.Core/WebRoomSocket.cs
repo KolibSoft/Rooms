@@ -136,7 +136,7 @@ namespace KolibSoft.Rooms.Core
         /// <summary>
         /// Room protocol name.
         /// </summary>
-        public const string Protocol = "Room";
+        public const string SubProtocol = "Room";
 
     }
 

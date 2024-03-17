@@ -84,7 +84,7 @@ public static class Program
             {
                 var uri = EnsureUri(() => args.GetArgument("--uri", "Enter remote URI: "));
                 var client = new ClientWebSocket();
-                client.Options.AddSubProtocol(WebRoomSocket.Protocol);
+                client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
                 await client.ConnectAsync(uri, default);
                 var socket = new WebRoomSocket(client);
                 Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
@@ -96,7 +96,7 @@ public static class Program
                 listener.Prefixes.Add(prefix);
                 _ = ListenAsync(listener);
                 var client = new ClientWebSocket();
-                client.Options.AddSubProtocol(WebRoomSocket.Protocol);
+                client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
                 await client.ConnectAsync(new Uri("prefix".Replace("http", "ws")), default);
                 var socket = new WebRoomSocket(client);
                 Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
@@ -132,7 +132,7 @@ public static class Program
                 context.Response.Close();
                 continue;
             }
-            var client = await context.AcceptWebSocketAsync(WebRoomSocket.Protocol);
+            var client = await context.AcceptWebSocketAsync(WebRoomSocket.SubProtocol);
             var socket = new WebRoomSocket(client.WebSocket);
             _ = hub.ListenAsync(socket);
             if (hub.Sockets.Count == 1) _ = hub.TransmitAsync();
