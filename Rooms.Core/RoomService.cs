@@ -28,9 +28,10 @@ namespace KolibSoft.Rooms.Core
                 await DisconnectAsync();
                 if (Connectors.TryGetValue(implementation, out SocketConnector? connector))
                 {
-                    Socket = await connector.Invoke(server);
-                    OnConnect(Socket);
-                    ListenAsync(Socket);
+                    var socket = await connector.Invoke(server);
+                    OnConnect(socket);
+                    ListenAsync(socket);
+                    Socket = socket;
                 }
             }
             catch { }
@@ -40,10 +41,11 @@ namespace KolibSoft.Rooms.Core
         public async Task SendAsync(RoomMessage message)
         {
             if (disposed) throw new ObjectDisposedException(null);
-            if (Socket?.IsAlive == true)
+            var socket = Socket;
+            if (socket?.IsAlive == true)
                 try
                 {
-                    await Socket.SendAsync(message);
+                    await socket.SendAsync(message);
                     OnMessageSent(message);
                 }
                 catch { }
@@ -70,10 +72,11 @@ namespace KolibSoft.Rooms.Core
         public Task DisconnectAsync()
         {
             if (disposed) throw new ObjectDisposedException(null);
-            if (Socket?.IsAlive == true)
+            var socket = Socket;
+            if (socket?.IsAlive == true)
             {
-                OnDisconnect(Socket);
-                Socket.Dispose();
+                OnDisconnect(socket);
+                socket.Dispose();
             }
             return Task.CompletedTask;
         }
