@@ -3,12 +3,12 @@
 - [Room Protocol](#room-protocol)
 - [Room Hub Routing](#room-hub-routing)
 - [Room Channel Conversion](#room-channel-conversion)
-- [Javascript Utils File](https://kolibsoft.github.io/rooms/lib/room.js)
+- [Javascript Utils File](./Rooms.Web/wwwroot/rooms.js)
 - [Room Test Server](https://krooms.azurewebsites.net/)
 
 ## Room ##
 
-A **Room** is a connection point where participants can send and receive messages. Once connected, a participant has the right to remain in the **Room** and cannot be removed, however the rest of the participants can agree to ignore them.
+A **Room** is a connection point where participants can send and receive messages. Once connected, a participant has the right to remain in the **Room** and cannot be removed, however the rest of the participants can agree to ignore them. Support TCP and Web Socket based connections.
 
 ## Room Protocol #
 
@@ -41,3 +41,38 @@ When a message is sent to the relay server with any identifier other than `00000
 ## Room Channel Conversion ##
 
 In case you want to refer to a specific channel within the body of a message, a conversion of that channel's identifier must be performed, this is achieved by performing an XOR operation between the identifier of the channel that sends the message and the identifier of the channel it refers to within the content of the message.
+
+## Room Console App ##
+
+Command line options:
+
+- `--impl` `[TCP, WEB]` Allows you to choose between TCP implementation and Web Sockets implementation.
+- `--mode` `[Client, Server]` Allows you to choose between Client mode and Server mode.
+- `--host` Allows you to specify the remote host to which you want to connect with the TCP client.
+- `--port` Specifies the remote port to connect to when using a TCP client or the local listening port of the TCP server.
+- `--uri` Allows you to specify the URL to which the Web Socket client connects.
+- `--prefix` Allows you to specify the HTTP server listening prefix.
+
+Example of run a TCP Room Client:
+
+```powershell
+.\Rooms.Console.exe --impl=TCP --mode=Client --host=localhost --port=55000
+```
+
+Example of run a TCP Room Server:
+
+```powershell
+.\Rooms.Console.exe --impl=TCP --mode=Server --port=55000
+```
+
+Example of run a Web Room Client:
+
+```powershell
+.\Rooms.Console.exe --impl=WEB --mode=Client --uri=ws://localhost:55000/
+```
+
+Example of run a Web Room Server:
+
+```powershell
+.\Rooms.Console.exe --impl=WEB --mode=Server --prefix=http://localhost:55000/
+```

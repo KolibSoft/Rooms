@@ -53,7 +53,7 @@ public class RoomController : ControllerBase
             room.RunAsync(TimeSpan.FromSeconds(16));
             if (room.Count < room.Slots && room.Pass == pass)
             {
-                var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync(WebRoomSocket.Protocol);
+                var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync(WebRoomSocket.SubProtocol);
                 var rsocket = new WebRoomSocket(wsocket, buffering);
                 await room.JoinAsync(rsocket, pass);
             }
