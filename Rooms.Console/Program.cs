@@ -5,6 +5,30 @@ using KolibSoft.Rooms.Core;
 
 namespace KolibSoft.Rooms.Console;
 
+public class Service : RoomService
+{
+
+    protected override void OnConnect(IRoomSocket socket)
+    {
+        base.OnConnect(socket);
+        System.Console.WriteLine($"Service Online");
+    }
+
+    protected override async void OnMessageReceived(RoomMessage message)
+    {
+        base.OnMessageReceived(message);
+        System.Console.WriteLine($"{message.Verb} [{message.Channel}] {message.Content}");
+        await SendAsync(message);
+    }
+
+    protected override void OnDisconnect(IRoomSocket socket)
+    {
+        base.OnDisconnect(socket);
+        System.Console.WriteLine($"Service Offline");
+    }
+
+}
+
 public static class Program
 {
 
@@ -53,11 +77,11 @@ public static class Program
 
     public static async Task Main(params string[] args)
     {
+        var mode = args.GetOption("--mode", ["Client", "Server", "Service"], "Choose run mode [Client, Server, Service]: ");
         var impl = args.GetOption("--impl", ["TCP", "WEB"], "Choose implementation to use [TCP, WEB]: ");
-        if (impl == "TCP")
+        if (mode == "Client")
         {
-            var mode = args.GetOption("--mode", ["Client", "Server"], "Choose run mode [Client, Server]: ");
-            if (mode == "Client")
+            if (impl == "TCP")
             {
                 var host = args.GetArgument("--host", "Enter remote host: ");
                 var port = EnsureInteger(() => args.GetArgument("--port", "Enter remote port: "));
@@ -66,7 +90,19 @@ public static class Program
                 var socket = new TcpRoomSocket(client);
                 Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
             }
-            else if (mode == "Server")
+            else if (impl == "WEB")
+            {
+                var uri = EnsureUri(() => args.GetArgument("--uri", "Enter remote URI: "));
+                var client = new ClientWebSocket();
+                client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
+                await client.ConnectAsync(uri, default);
+                var socket = new WebRoomSocket(client);
+                Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
+            }
+        }
+        else if (mode == "Server")
+        {
+            if (impl == "TCP")
             {
                 var port = EnsureInteger(() => args.GetArgument("--port", "Enter local port to listen: "));
                 var listener = new TcpListener(IPAddress.Any, port);
@@ -76,20 +112,7 @@ public static class Program
                 var socket = new TcpRoomSocket(client);
                 Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
             }
-        }
-        else if (impl == "WEB")
-        {
-            var mode = args.GetOption("--mode", ["Client", "Server"], "Choose run mode [Server, Client]: ");
-            if (mode == "Client")
-            {
-                var uri = EnsureUri(() => args.GetArgument("--uri", "Enter remote URI: "));
-                var client = new ClientWebSocket();
-                client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
-                await client.ConnectAsync(uri, default);
-                var socket = new WebRoomSocket(client);
-                Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
-            }
-            else if (mode == "Server")
+            else if (impl == "WEB")
             {
                 var prefix = args.GetArgument("--prefix", "Enter http prefix: ");
                 var listener = new HttpListener();
@@ -101,6 +124,14 @@ public static class Program
                 var socket = new WebRoomSocket(client);
                 Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
             }
+        }
+        else if (mode == "Service")
+        {
+            var server = args.GetArgument("--server", "Enter Room server: ");
+            var service = new Service();
+            await service.ConnectAsync(server, impl);
+            while (service.Socket?.IsAlive == true) await Task.Delay(100);
+            await Task.Delay(100);
         }
     }
 

@@ -11,13 +11,6 @@ namespace KolibSoft.Rooms.Core
 {
 
     /// <summary>
-    /// Socket implementation connection delegate.
-    /// </summary>
-    /// <param name="server">Implementation server identifier.</param>
-    /// <returns>Specific socket implementation.</returns>
-    public delegate Task<IRoomSocket> RoomConnector(string server);
-
-    /// <summary>
     /// Manage a Room connection.
     /// </summary>
     public class RoomService : IDisposable
@@ -180,13 +173,12 @@ namespace KolibSoft.Rooms.Core
         /// </summary>
         public static readonly RoomConnector TcpConnector = async (server) =>
             {
+                server = server.Replace("localhost", "127.0.0.1");
                 var cancellation = new CancellationTokenSource();
                 cancellation.CancelAfter(TimeSpan.FromMinutes(1));
-                var parts = server.Split(":");
-                var host = (await Dns.GetHostAddressesAsync(parts[0])).First();
-                var port = int.Parse(parts[1]);
+                var endpoint = IPEndPoint.Parse(server);
                 var client = new TcpClient();
-                await client.ConnectAsync(host, port, cancellation.Token);
+                await client.ConnectAsync(endpoint.Address, endpoint.Port, cancellation.Token);
                 var socket = new TcpRoomSocket(client);
                 return socket;
             };
