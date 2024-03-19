@@ -72,6 +72,7 @@ namespace KolibSoft.Rooms.Core
             if (disposed) throw new ObjectDisposedException(null);
             var result = await Socket.ReceiveAsync(ReceiveBuffer, default);
             var data = ReceiveBuffer.Slice(0, result.Count);
+            // TODO: Handle slicing errors.
             if (result.MessageType == WebSocketMessageType.Close)
             {
                 await Socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default);

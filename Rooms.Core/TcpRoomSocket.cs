@@ -74,6 +74,12 @@ namespace KolibSoft.Rooms.Core
             if (disposed) throw new ObjectDisposedException(null);
             var stream = Client.GetStream();
             var count = await stream.ReadAsync(ReceiveBuffer);
+            // TODO: Handle slicing errors.
+            if (count == -1)
+            {
+                Client.Close();
+                throw new IOException("Tcp Socket closed");
+            }
             if (stream.DataAvailable)
             {
                 Client.Close();
