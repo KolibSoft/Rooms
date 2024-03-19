@@ -17,6 +17,11 @@ namespace KolibSoft.Rooms.Core
     {
 
         /// <summary>
+        /// Async monitor
+        /// </summary>
+        private object monitor = new();
+
+        /// <summary>
         /// Disposed flag.
         /// </summary>
         private bool disposed;
@@ -27,9 +32,19 @@ namespace KolibSoft.Rooms.Core
         public IRoomSocket? Socket { get; private set; }
 
         /// <summary>
+        /// Service status.
+        /// </summary>
+        public RoomServiceStatus Status { get; private set; }
+
+        /// <summary>
         /// Available socket implementations.
         /// </summary>
         public Dictionary<string, RoomConnector> Connectors { get; } = new();
+
+        /// <summary>
+        /// Service status changed event.
+        /// </summary>
+        public event EventHandler<RoomServiceStatus>? StatusChanged;
 
         /// <summary>
         /// Called just after success socket connection.
@@ -53,9 +68,14 @@ namespace KolibSoft.Rooms.Core
                 if (Connectors.TryGetValue(implementation, out RoomConnector? connector))
                 {
                     var socket = await connector.Invoke(server);
-                    OnConnect(socket);
+                    lock (monitor)
+                    {
+                        Socket = socket;
+                        Status = RoomServiceStatus.Online;
+                        StatusChanged?.Invoke(this, RoomServiceStatus.Online);
+                        OnConnect(socket);
+                    }
                     ListenAsync(socket);
-                    Socket = socket;
                 }
             }
             catch { }
@@ -108,8 +128,17 @@ namespace KolibSoft.Rooms.Core
                 catch { }
                 await Task.Delay(100);
             }
-            OnDisconnect(socket);
-            socket.Dispose();
+            lock (monitor)
+            {
+                OnDisconnect(socket);
+                socket.Dispose();
+                if (Socket == socket)
+                {
+                    Socket = null;
+                    Status = RoomServiceStatus.Offline;
+                    StatusChanged?.Invoke(this, RoomServiceStatus.Offline);
+                }
+            }
         }
 
         /// <summary>
@@ -126,11 +155,16 @@ namespace KolibSoft.Rooms.Core
         public Task DisconnectAsync()
         {
             if (disposed) throw new ObjectDisposedException(null);
-            var socket = Socket;
-            if (socket?.IsAlive == true)
+            lock (monitor)
             {
-                OnDisconnect(socket);
-                socket.Dispose();
+                if (Socket?.IsAlive == true)
+                {
+                    OnDisconnect(Socket);
+                    Socket.Dispose();
+                    Socket = null;
+                    Status = RoomServiceStatus.Offline;
+                    StatusChanged?.Invoke(this, RoomServiceStatus.Offline);
+                }
             }
             return Task.CompletedTask;
         }

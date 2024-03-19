@@ -11,7 +11,7 @@ public class Service : RoomService
     protected override void OnConnect(IRoomSocket socket)
     {
         base.OnConnect(socket);
-        System.Console.WriteLine($"Service Online");
+        if (Socket == socket) System.Console.WriteLine($"Service Online");
     }
 
     protected override async void OnMessageReceived(RoomMessage message)
@@ -24,7 +24,7 @@ public class Service : RoomService
     protected override void OnDisconnect(IRoomSocket socket)
     {
         base.OnDisconnect(socket);
-        System.Console.WriteLine($"Service Offline");
+        if (Socket == socket) System.Console.WriteLine($"Service Offline");
     }
 
 }
@@ -130,8 +130,7 @@ public static class Program
             var server = args.GetArgument("--server", "Enter Room server: ");
             var service = new Service();
             await service.ConnectAsync(server, impl);
-            while (service.Socket?.IsAlive == true) await Task.Delay(100);
-            await Task.Delay(100);
+            while (service.Status == RoomServiceStatus.Online) await Task.Delay(100);
         }
     }
 
