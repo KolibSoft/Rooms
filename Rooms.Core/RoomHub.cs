@@ -64,7 +64,7 @@ namespace KolibSoft.Rooms.Core
                 catch (Exception e)
                 {
                     var writer = LogWriter;
-                    if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                    if (writer != null) await writer.WriteLineAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
                 }
             }
             stopwatch.Stop();
@@ -91,7 +91,7 @@ namespace KolibSoft.Rooms.Core
                         catch (Exception e)
                         {
                             var writer = LogWriter;
-                            if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                            if (writer != null) await writer.WriteLineAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
                         }
                     else if (message.Channel == RoomChannel.Broadcast)
                     {
@@ -109,7 +109,7 @@ namespace KolibSoft.Rooms.Core
                                 catch (Exception e)
                                 {
                                     var writer = LogWriter;
-                                    if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                                    if (writer != null) await writer.WriteLineAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
                                 }
                             }
                         message.Channel = ochannel;
@@ -127,7 +127,7 @@ namespace KolibSoft.Rooms.Core
                             catch (Exception e)
                             {
                                 var writer = LogWriter;
-                                if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                                if (writer != null) await writer.WriteLineAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
                             }
                     }
 

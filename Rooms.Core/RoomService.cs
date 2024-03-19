@@ -118,7 +118,7 @@ namespace KolibSoft.Rooms.Core
                 catch (Exception e)
                 {
                     var writer = LogWriter;
-                    if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+                    if (writer != null) await writer.WriteLineAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
                 }
         }
 
@@ -160,7 +160,7 @@ namespace KolibSoft.Rooms.Core
                 catch (Exception e)
                 {
                     var writer = LogWriter;
-                    if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+                    if (writer != null) await writer.WriteLineAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
                 }
             }
             stopwatch.Stop();
