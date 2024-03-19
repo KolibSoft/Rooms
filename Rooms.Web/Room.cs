@@ -1,17 +1,18 @@
+using System.Diagnostics;
 using KolibSoft.Rooms.Core;
 
 namespace KolibSoft.Rooms.Web;
 
-public class Room(int code, int slots = 4, string? pass = null, string? tag = null)
+public class Room
 {
 
-    public int Code { get; } = code;
-    public int Slots { get; } = slots;
-    public string? Pass { get; } = pass;
-    public string? Tag { get; } = tag;
+    public int Code { get; }
+    public int Slots { get; }
+    public string? Pass { get; }
+    public string? Tag { get; }
 
     public RoomHub Hub { get; } = new();
-    public int Count => Hub.Sockets.Count;
+    public int Count => Hub.Sockets.Length;
     public bool IsAlive { get; private set; } = false;
 
     public async Task JoinAsync(IRoomSocket socket, string? pass)
@@ -39,6 +40,15 @@ public class Room(int code, int slots = 4, string? pass = null, string? tag = nu
             }
             IsAlive = false;
         }
+    }
+
+    public Room(int code, int slots = 4, string? pass = null, string? tag = null)
+    {
+        Code = code;
+        Slots = slots;
+        Pass = pass;
+        Tag = tag;
+        Hub.LogWriter = Console.Out;
     }
 
 }

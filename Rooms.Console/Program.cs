@@ -144,7 +144,7 @@ public static class Program
             var client = await listener.AcceptTcpClientAsync();
             var socket = new TcpRoomSocket(client);
             _ = hub.ListenAsync(socket);
-            if (hub.Sockets.Count == 1) _ = hub.TransmitAsync();
+            if (hub.Sockets.Length == 1) _ = hub.TransmitAsync();
         }
     }
 
@@ -165,7 +165,7 @@ public static class Program
             var client = await context.AcceptWebSocketAsync(WebRoomSocket.SubProtocol);
             var socket = new WebRoomSocket(client.WebSocket);
             _ = hub.ListenAsync(socket);
-            if (hub.Sockets.Count == 1) _ = hub.TransmitAsync();
+            if (hub.Sockets.Length == 1) _ = hub.TransmitAsync();
         }
     }
 

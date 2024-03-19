@@ -75,7 +75,7 @@ namespace KolibSoft.Rooms.Core
             if (result.MessageType == WebSocketMessageType.Close)
             {
                 await Socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default);
-                return null!;
+                throw new IOException("Web Socket closed");
             }
             if (!result.EndOfMessage)
             {

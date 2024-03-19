@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -15,12 +17,17 @@ namespace KolibSoft.Rooms.Core
         /// <summary>
         /// The current hub participants.
         /// </summary>
-        public ImmutableList<IRoomSocket> Sockets { get; private set; } = ImmutableList<IRoomSocket>.Empty;
+        public ImmutableArray<IRoomSocket> Sockets { get; private set; } = ImmutableArray<IRoomSocket>.Empty;
 
         /// <summary>
         /// The messages to send with its author.
         /// </summary>
-        public ConcurrentQueue<(IRoomSocket author, RoomMessage message)> Messages { get; } = new();
+        public ConcurrentQueue<RoomContext> Messages { get; } = new();
+
+        /// <summary>
+        /// Log writer
+        /// </summary>
+        public TextWriter? LogWriter { get; set; }
 
         /// <summary>
         /// Starts to receive the incoming socket messages while it is alive. Use a delay of 100ms between messages.
@@ -35,10 +42,13 @@ namespace KolibSoft.Rooms.Core
                 try
                 {
                     var message = await socket.ReceiveAsync();
-                    Messages.Enqueue((socket, message));
+                    Messages.Enqueue(new RoomContext(socket, message));
                 }
-                catch { }
-                await Task.Delay(100);
+                catch (Exception e)
+                {
+                    var writer = LogWriter;
+                    if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                }
             }
             Sockets = Sockets.Remove(socket);
         }
@@ -51,15 +61,20 @@ namespace KolibSoft.Rooms.Core
         {
             while (Sockets.Any())
             {
-                while (Messages.TryDequeue(out (IRoomSocket, RoomMessage) msg))
+                while (Messages.TryDequeue(out RoomContext? context))
                 {
-                    (IRoomSocket author, RoomMessage message) = msg;
+                    var author = context.Socket;
+                    var message = context.Message;
                     if (author.IsAlive && message.Channel == RoomChannel.Loopback)
                         try
                         {
                             await author.SendAsync(message);
                         }
-                        catch { }
+                        catch (Exception e)
+                        {
+                            var writer = LogWriter;
+                            if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                        }
                     else if (message.Channel == RoomChannel.Broadcast)
                     {
                         var ochannel = message.Channel;
@@ -73,7 +88,11 @@ namespace KolibSoft.Rooms.Core
                                 {
                                     await socket.SendAsync(message);
                                 }
-                                catch { }
+                                catch (Exception e)
+                                {
+                                    var writer = LogWriter;
+                                    if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                                }
                             }
                         message.Channel = ochannel;
                     }
@@ -87,11 +106,14 @@ namespace KolibSoft.Rooms.Core
                             {
                                 await socket.SendAsync(message);
                             }
-                            catch { }
+                            catch (Exception e)
+                            {
+                                var writer = LogWriter;
+                                if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
+                            }
                     }
 
                 }
-                await Task.Delay(100);
             }
         }
 

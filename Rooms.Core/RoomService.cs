@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -47,6 +48,11 @@ namespace KolibSoft.Rooms.Core
         public event EventHandler<RoomServiceStatus>? StatusChanged;
 
         /// <summary>
+        /// Log writer
+        /// </summary>
+        public TextWriter? LogWriter { get; set; }
+
+        /// <summary>
         /// Called just after success socket connection.
         /// </summary>
         /// <param name="socket">Connected socket.</param>
@@ -78,7 +84,11 @@ namespace KolibSoft.Rooms.Core
                     ListenAsync(socket);
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                var writer = LogWriter;
+                if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+            }
         }
 
         /// <summary>
@@ -103,7 +113,11 @@ namespace KolibSoft.Rooms.Core
                     await socket.SendAsync(message);
                     OnMessageSent(message);
                 }
-                catch { }
+                catch (Exception e)
+                {
+                    var writer = LogWriter;
+                    if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+                }
         }
 
         /// <summary>
@@ -125,8 +139,11 @@ namespace KolibSoft.Rooms.Core
                     var message = await socket.ReceiveAsync();
                     OnMessageReceived(message);
                 }
-                catch { }
-                await Task.Delay(100);
+                catch (Exception e)
+                {
+                    var writer = LogWriter;
+                    if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+                }
             }
             lock (monitor)
             {

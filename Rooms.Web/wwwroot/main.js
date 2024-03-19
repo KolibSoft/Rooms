@@ -43,7 +43,11 @@ async function fetchRoomList() {
 bRefresh.addEventListener("click", fetchRoomList);
 
 function joinRoom() {
-    if (socket) socket.close();
+    if (socket) {
+        var s = socket;
+        socket = null;
+        s.close();
+    }
 
     let endpoint = new URL(tRoomEndpoint.value);
     endpoint.protocol = endpoint.protocol == "https:" ? "wss:" : "ws:";
@@ -56,23 +60,29 @@ function joinRoom() {
     socket = new WebSocket(endpoint.href, RoomProtocol);
 
     socket.addEventListener("open", function () {
-        resetRoomLog();
-        resetMessageOptions();
-        appendRoomLog("Joined");
-        bSend.disabled = false;
-        fetchRoomList();
+        if (socket == this) {
+            resetRoomLog();
+            resetMessageOptions();
+            appendRoomLog("Joined");
+            bSend.disabled = false;
+            fetchRoomList();
+        }
     });
 
     socket.addEventListener("close", function () {
-        appendRoomLog("Left");
-        bSend.disabled = true;
-        fetchRoomList();
+        if (socket == this) {
+            appendRoomLog("Left");
+            bSend.disabled = true;
+            fetchRoomList();
+        }
     });
 
     socket.addEventListener("message", function (event) {
-        let message = parseRoomMessage(event.data);
-        appendRoomLog(`${message.verb} [${message.channel}] ${message.content}`);
-        appendMessageOptions(message);
+        if (socket == this) {
+            let message = parseRoomMessage(event.data);
+            appendRoomLog(`${message.verb} [${message.channel}] ${message.content}`);
+            appendMessageOptions(message);
+        }
     });
 
 }
