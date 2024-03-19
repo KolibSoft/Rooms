@@ -132,6 +132,7 @@ namespace KolibSoft.Rooms.Core
                     }
 
                 }
+                await Task.Delay(100);
             }
         }
 

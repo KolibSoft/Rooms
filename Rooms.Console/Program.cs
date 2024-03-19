@@ -120,7 +120,7 @@ public static class Program
                 _ = ListenAsync(listener);
                 var client = new ClientWebSocket();
                 client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
-                await client.ConnectAsync(new Uri("prefix".Replace("http", "ws")), default);
+                await client.ConnectAsync(new Uri(prefix.Replace("http", "ws")), default);
                 var socket = new WebRoomSocket(client);
                 Task.WaitAll(ReceiveAsync(socket), SendAsync(socket));
             }
@@ -137,6 +137,7 @@ public static class Program
     public static async Task ListenAsync(TcpListener listener)
     {
         var hub = new RoomHub();
+        hub.LogWriter = System.Console.Error;
         listener.Start();
         System.Console.WriteLine("TCP Room Server started");
         while (true)
@@ -151,6 +152,7 @@ public static class Program
     public static async Task ListenAsync(HttpListener listener)
     {
         var hub = new RoomHub();
+        hub.LogWriter = System.Console.Error;
         listener.Start();
         System.Console.WriteLine("WEB Room Server started");
         while (true)

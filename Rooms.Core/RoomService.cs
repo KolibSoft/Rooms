@@ -162,6 +162,7 @@ namespace KolibSoft.Rooms.Core
                     var writer = LogWriter;
                     if (writer != null) await writer.WriteLineAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
                 }
+                await Task.Delay(100);
             }
             stopwatch.Stop();
             lock (monitor)
