@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,16 +33,32 @@ namespace KolibSoft.Rooms.Core
         /// <summary>
         /// Starts to receive the incoming socket messages while it is alive. Use a delay of 100ms between messages.
         /// </summary>
-        /// <param name="socket">A conncted socket</param>
+        /// <param name="socket">A connected socket.</param>
+        /// <param name="rateLimit">Max amount of bytes to read per second.</param>
         /// <returns></returns>
-        public async Task ListenAsync(IRoomSocket socket)
+        public async Task ListenAsync(IRoomSocket socket, int rateLimit = 1024)
         {
             Sockets = Sockets.Add(socket);
+            int bytes = 0;
+            var ttl = TimeSpan.FromSeconds(1);
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             while (socket.IsAlive)
             {
                 try
                 {
                     var message = await socket.ReceiveAsync();
+                    bytes += message.Length;
+                    if (bytes > rateLimit)
+                    {
+                        socket.Dispose();
+                        break;
+                    }
+                    if (stopwatch.Elapsed > ttl)
+                    {
+                        bytes = 0;
+                        stopwatch.Restart();
+                    }
                     Messages.Enqueue(new RoomContext(socket, message));
                 }
                 catch (Exception e)
@@ -50,6 +67,7 @@ namespace KolibSoft.Rooms.Core
                     if (writer != null) await writer.WriteAsync($"Room Hub exception: {e.Message}\n{e.StackTrace}");
                 }
             }
+            stopwatch.Stop();
             Sockets = Sockets.Remove(socket);
         }
 

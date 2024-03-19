@@ -19,7 +19,7 @@ public class Room
     {
         if (Count >= Slots || Pass != pass)
             throw new InvalidOperationException();
-        await Hub.ListenAsync(socket);
+        await Hub.ListenAsync(socket, 1024 * 1024);
     }
 
     public async void RunAsync(TimeSpan ttl)
