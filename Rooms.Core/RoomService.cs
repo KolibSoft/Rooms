@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -47,6 +50,11 @@ namespace KolibSoft.Rooms.Core
         public event EventHandler<RoomServiceStatus>? StatusChanged;
 
         /// <summary>
+        /// Log writer
+        /// </summary>
+        public TextWriter? LogWriter { get; set; }
+
+        /// <summary>
         /// Called just after success socket connection.
         /// </summary>
         /// <param name="socket">Connected socket.</param>
@@ -78,7 +86,11 @@ namespace KolibSoft.Rooms.Core
                     ListenAsync(socket);
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                var writer = LogWriter;
+                if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+            }
         }
 
         /// <summary>
@@ -103,7 +115,11 @@ namespace KolibSoft.Rooms.Core
                     await socket.SendAsync(message);
                     OnMessageSent(message);
                 }
-                catch { }
+                catch (Exception e)
+                {
+                    var writer = LogWriter;
+                    if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+                }
         }
 
         /// <summary>
@@ -116,18 +132,38 @@ namespace KolibSoft.Rooms.Core
         /// Start to listen incoming messages.
         /// </summary>
         /// <param name="socket">Connected socket.</param>
-        private async void ListenAsync(IRoomSocket socket)
+        /// <param name="rateLimit">Max amount of bytes to read per second.</param>
+        private async void ListenAsync(IRoomSocket socket, int rateLimit = 1024)
         {
+            var bytes = 0;
+            var ttl = TimeSpan.FromSeconds(1);
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             while (socket.IsAlive)
             {
                 try
                 {
                     var message = await socket.ReceiveAsync();
+                    bytes += message.Length;
+                    if (bytes > rateLimit)
+                    {
+                        socket.Dispose();
+                        break;
+                    }
+                    if (stopwatch.Elapsed > ttl)
+                    {
+                        bytes = 0;
+                        stopwatch.Restart();
+                    }
                     OnMessageReceived(message);
                 }
-                catch { }
-                await Task.Delay(100);
+                catch (Exception e)
+                {
+                    var writer = LogWriter;
+                    if (writer != null) await writer.WriteAsync($"Room Service exception: {e.Message}\n{e.StackTrace}");
+                }
             }
+            stopwatch.Stop();
             lock (monitor)
             {
                 OnDisconnect(socket);
