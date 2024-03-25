@@ -9,7 +9,7 @@ namespace KolibSoft.Rooms.Core
     /// <summary>
     /// Represents a sequence of 3 uppercase or lowercase letters of the ASCII code as UTF8 text.
     /// </summary>
-    public struct RoomVerb
+    public readonly struct RoomVerb
     {
 
         /// <summary>

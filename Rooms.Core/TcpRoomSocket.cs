@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace KolibSoft.Rooms.Core
@@ -25,7 +26,7 @@ namespace KolibSoft.Rooms.Core
         /// <summary>
         /// Checks if the underlying TCP Client is open.
         /// </summary>
-        public bool IsAlive => Client.Connected;
+        public bool IsAlive => !disposed && Client.Connected;
 
         /// <summary>
         /// The underlying Send Buffer.
@@ -86,12 +87,12 @@ namespace KolibSoft.Rooms.Core
                 throw new IOException("Too big message received");
             }
             var data = ReceiveBuffer.Slice(0, count);
-            var message = new RoomMessage(data);
-            if (!message.Validate())
+            if (!RoomMessage.Verify(data))
             {
                 Client.Close();
-                throw new FormatException($"Invalid message received: {message}");
+                throw new FormatException($"Invalid message received: {Encoding.UTF8.GetString(data)}");
             }
+            var message = new RoomMessage(data.ToArray());
             return message;
         }
 

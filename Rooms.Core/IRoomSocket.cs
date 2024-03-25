@@ -16,14 +16,14 @@ namespace KolibSoft.Rooms.Core
         public bool IsAlive { get; }
 
         /// <summary>
-        /// Send a message asynchronously. Close the underlying TCP Client if an invalid message is send.
+        /// Send a message asynchronously. Must close the underlying socket implementation if an invalid message is send.
         /// </summary>
         /// <param name="message">The message to send.</param>
         /// <returns></returns>
         public Task SendAsync(RoomMessage message);
 
         /// <summary>
-        /// Receive a message asynchronously. Close the underlying TCP Client if an invalid message is received.
+        /// Receive a message asynchronously. Must close the underlying socket implementation if an invalid message is received.
         /// </summary>
         /// <returns>The message received.</returns>
         public Task<RoomMessage> ReceiveAsync();

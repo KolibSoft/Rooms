@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net.WebSockets;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace KolibSoft.Rooms.Core
@@ -25,7 +26,7 @@ namespace KolibSoft.Rooms.Core
         /// <summary>
         /// Checks if the underlying Web Socket is open.
         /// </summary>
-        public bool IsAlive => Socket.State == WebSocketState.Open;
+        public bool IsAlive => !disposed && Socket.State == WebSocketState.Open;
 
         /// <summary>
         /// The underlying Send Buffer.
@@ -83,12 +84,12 @@ namespace KolibSoft.Rooms.Core
                 await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, default);
                 throw new IOException("Too big message received");
             }
-            var message = new RoomMessage(data.ToArray());
-            if (!message.Validate())
+            if (!RoomMessage.Verify(data))
             {
                 await Socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, null, default);
-                throw new FormatException($"Invalid message received: {message}");
+                throw new FormatException($"Invalid message received: {Encoding.UTF8.GetString(data)}");
             }
+            var message = new RoomMessage(data.ToArray());
             return message;
         }
 

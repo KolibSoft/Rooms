@@ -79,7 +79,7 @@ namespace KolibSoft.Rooms.Core
         {
             while (Sockets.Any())
             {
-                while (Messages.TryDequeue(out RoomContext? context))
+                while (Messages.TryDequeue(out RoomContext context))
                 {
                     var author = context.Socket;
                     var message = context.Message;

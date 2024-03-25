@@ -9,7 +9,7 @@ namespace KolibSoft.Rooms.Core
     /// <summary>
     /// Represents an 8-digit hexadecimal number that represents a 32-bit unsigned integer.
     /// </summary>
-    public struct RoomChannel
+    public readonly struct RoomChannel
     {
 
         /// <summary>

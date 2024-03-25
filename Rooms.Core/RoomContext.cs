@@ -4,7 +4,7 @@ namespace KolibSoft.Rooms.Core
     /// <summary>
     /// Binds a socket with a message.
     /// </summary>
-    public class RoomContext
+    public readonly struct RoomContext
     {
 
         /// <summary>

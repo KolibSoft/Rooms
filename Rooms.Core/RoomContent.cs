@@ -9,7 +9,7 @@ namespace KolibSoft.Rooms.Core
     /// <summary>
     /// Represents a variable length UTF8 text.
     /// </summary>
-    public struct RoomContent
+    public readonly struct RoomContent
     {
 
         /// <summary>
