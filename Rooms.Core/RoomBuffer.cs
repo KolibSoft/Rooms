@@ -15,14 +15,24 @@ namespace KolibSoft.Rooms.Core
         private bool disposed = false;
 
         /// <summary>
-        /// Internal buffer to store a message at a time.
+        /// Buffer to store a message at a time.
         /// </summary>
-        public ArraySegment<byte> Buffer { get; private set; }
+        private ArraySegment<byte> buffer;
 
         /// <summary>
-        /// Gets the current content length.
+        /// Current content length.
         /// </summary>
-        public int ContentLength { get; private set; }
+        private int contentLength;
+
+        /// <summary>
+        /// Gets the current available message data.
+        /// </summary>
+        public ArraySegment<byte> Data => ContentBuffering > 0 ? buffer.Slice(0, 13 + contentLength) : buffer;
+
+        /// <summary>
+        /// Gets the maximun content size supported.
+        /// </summary>
+        public int ContentBuffering => Math.Max(0, buffer.Count - 13);
 
         /// <summary>
         /// Read/Write a verb value into the internal buffer.
@@ -32,14 +42,14 @@ namespace KolibSoft.Rooms.Core
             get
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var verb = Buffer[0..3];
+                var verb = buffer[0..3];
                 if (!RoomVerb.Verify(verb)) throw new FormatException($"Invalid verb format: {verb}");
                 return new(verb);
             }
             set
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var verb = Buffer[0..3];
+                var verb = buffer[0..3];
                 if (!value.Validate()) throw new FormatException($"Invalid verb format: {value}");
                 value.Data.CopyTo(verb);
             }
@@ -53,14 +63,14 @@ namespace KolibSoft.Rooms.Core
             get
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var channel = Buffer[4..12];
+                var channel = buffer[4..12];
                 if (!RoomChannel.Verify(channel)) throw new FormatException($"Invalid channel format: {channel}");
                 return new(channel);
             }
             set
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var channel = Buffer[4..12];
+                var channel = buffer[4..12];
                 if (!value.Validate()) throw new FormatException($"Invalid channel format: {value}");
                 value.Data.CopyTo(channel);
             }
@@ -74,15 +84,17 @@ namespace KolibSoft.Rooms.Core
             get
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var content = Buffer[13..];
-                return new(content.Slice(0, ContentLength));
+                if (ContentBuffering > 0) throw new InvalidOperationException("Content is not buffering");
+                var content = buffer[13..];
+                return new(content.Slice(0, contentLength));
             }
             set
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var content = Buffer[13..];
+                if (ContentBuffering > 0) throw new InvalidOperationException("Content is not buffering");
+                var content = buffer[13..];
                 value.Data.CopyTo(content);
-                ContentLength = value.Length;
+                contentLength = value.Length;
             }
         }
 
@@ -94,7 +106,7 @@ namespace KolibSoft.Rooms.Core
         public bool Validate()
         {
             if (disposed) throw new ObjectDisposedException(null);
-            var result = RoomMessage.Verify(Buffer);
+            var result = RoomMessage.Verify(buffer);
             return result;
         }
 
@@ -106,8 +118,8 @@ namespace KolibSoft.Rooms.Core
         {
             if (!disposed)
             {
-                Buffer = default;
-                ContentLength = 0;
+                buffer = default;
+                contentLength = 0;
                 disposed = true;
             }
         }
@@ -130,7 +142,7 @@ namespace KolibSoft.Rooms.Core
             var buffer = new byte[buffering];
             buffer[3] = (byte)' ';
             if (buffering > 12) buffer[12] = (byte)'\n';
-            Buffer = buffer;
+            this.buffer = buffer;
         }
 
         /// <summary>
@@ -143,7 +155,7 @@ namespace KolibSoft.Rooms.Core
             if (buffer.Count < 12) throw new ArgumentException("Buffer is too short (min 12)");
             buffer[3] = (byte)' ';
             if (buffer.Count > 12) buffer[12] = (byte)'\n';
-            Buffer = buffer;
+            this.buffer = buffer;
         }
 
     }
