@@ -15,9 +15,12 @@ namespace KolibSoft.Rooms.Core
         /// <summary>
         /// UTF8 internal data.
         /// </summary>
-        public ArraySegment<byte> Data { get; }
+        private readonly ArraySegment<byte> data;
 
-        public int Length => Data.Count;
+        /// <summary>
+        /// Gets the length of the content in bytes.
+        /// </summary>
+        public int Length => data.Count;
 
         /// <summary>
         /// Gets the string representation of the content.
@@ -25,7 +28,7 @@ namespace KolibSoft.Rooms.Core
         /// <returns></returns>
         public override string ToString()
         {
-            return Encoding.UTF8.GetString(Data);
+            return Encoding.UTF8.GetString(data);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -39,16 +42,16 @@ namespace KolibSoft.Rooms.Core
 
         public override int GetHashCode()
         {
-            return Data.GetHashCode();
+            return data.GetHashCode();
         }
 
         /// <summary>
         /// Create a Content with the utf8 data without validate it.
         /// </summary>
         /// <param name="utf8">UTF8 text.</param>
-        public RoomContent(ArraySegment<byte> utf8)
+        private RoomContent(ArraySegment<byte> utf8)
         {
-            Data = utf8;
+            data = utf8;
         }
 
         /// <summary>
@@ -75,12 +78,12 @@ namespace KolibSoft.Rooms.Core
 
         public static bool operator ==(RoomContent lhs, RoomContent rhs)
         {
-            return lhs.Data.SequenceEqual(rhs.Data);
+            return lhs.data.SequenceEqual(rhs.data);
         }
 
         public static bool operator !=(RoomContent lhs, RoomContent rhs)
         {
-            return !lhs.Data.SequenceEqual(rhs.Data);
+            return !lhs.data.SequenceEqual(rhs.data);
         }
 
         /// <summary>

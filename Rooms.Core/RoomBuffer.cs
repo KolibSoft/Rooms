@@ -72,7 +72,7 @@ namespace KolibSoft.Rooms.Core
                 if (disposed) throw new ObjectDisposedException(null);
                 var channel = buffer[4..12];
                 if (!value.Validate()) throw new FormatException($"Invalid channel format: {value}");
-                value.Data.CopyTo(channel);
+                value.data.CopyTo(channel);
             }
         }
 
@@ -93,7 +93,7 @@ namespace KolibSoft.Rooms.Core
                 if (disposed) throw new ObjectDisposedException(null);
                 if (ContentBuffering > 0) throw new InvalidOperationException("Content is not buffering");
                 var content = buffer[13..];
-                value.Data.CopyTo(content);
+                value.data.CopyTo(content);
                 contentLength = value.Length;
             }
         }

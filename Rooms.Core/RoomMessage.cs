@@ -40,8 +40,8 @@ namespace KolibSoft.Rooms.Core
             if (data.Count < Length)
                 throw new ArgumentException("Data is too short");
             Verb.Data.CopyTo(data[..3]);
-            Channel.Data.CopyTo(data[4..12]);
-            Content.Data.CopyTo(data[13..]);
+            Channel.data.CopyTo(data[4..12]);
+            Content.data.CopyTo(data[13..]);
             data[3] = (byte)' ';
             data[12] = (byte)'\n';
         }
