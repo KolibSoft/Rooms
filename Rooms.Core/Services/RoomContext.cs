@@ -1,4 +1,6 @@
-namespace KolibSoft.Rooms.Core
+using KolibSoft.Rooms.Core.Sockets;
+
+namespace KolibSoft.Rooms.Core.Services
 {
 
     /// <summary>

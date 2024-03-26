@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace KolibSoft.Rooms.Core
+namespace KolibSoft.Rooms.Core.Sockets
 {
 
     /// <summary>

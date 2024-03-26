@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KolibSoft.Rooms.Core
+namespace KolibSoft.Rooms.Core.Sockets
 {
 
     /// <summary>

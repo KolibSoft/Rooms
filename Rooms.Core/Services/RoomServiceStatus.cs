@@ -1,4 +1,4 @@
-namespace KolibSoft.Rooms.Core
+namespace KolibSoft.Rooms.Core.Services
 {
 
     /// <summary>

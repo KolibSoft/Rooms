@@ -2,15 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
+using KolibSoft.Rooms.Core.Sockets;
 
-namespace KolibSoft.Rooms.Core
+namespace KolibSoft.Rooms.Core.Services
 {
 
     /// <summary>
