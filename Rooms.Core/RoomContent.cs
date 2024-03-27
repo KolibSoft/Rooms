@@ -46,10 +46,19 @@ namespace KolibSoft.Rooms.Core
         }
 
         /// <summary>
+        /// Copies the internal data to target.
+        /// </summary>
+        /// <param name="target"></param>
+        public void CopyTo(Span<byte> target)
+        {
+            data.AsSpan().CopyTo(target);
+        }
+
+        /// <summary>
         /// Create a Content with the utf8 data without validate it.
         /// </summary>
         /// <param name="utf8">UTF8 text.</param>
-        private RoomContent(ArraySegment<byte> utf8)
+        public RoomContent(ArraySegment<byte> utf8)
         {
             data = utf8;
         }

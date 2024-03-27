@@ -31,22 +31,6 @@ namespace KolibSoft.Rooms.Core
         public int Length => Verb.Length + Channel.Length + Content.Length + 2;
 
         /// <summary>
-        /// Copies the message into a data buffer.
-        /// </summary>
-        /// <param name="data">Data buffer.</param>
-        /// <exception cref="ArgumentException"></exception>
-        public void CopyTo(ArraySegment<byte> data)
-        {
-            if (data.Count < Length)
-                throw new ArgumentException("Data is too short");
-            Verb.Data.CopyTo(data[..3]);
-            Channel.data.CopyTo(data[4..12]);
-            Content.data.CopyTo(data[13..]);
-            data[3] = (byte)' ';
-            data[12] = (byte)'\n';
-        }
-
-        /// <summary>
         /// Gets the string representation of the message.
         /// </summary>
         /// <returns></returns>
@@ -66,14 +50,32 @@ namespace KolibSoft.Rooms.Core
         }
 
         /// <summary>
-        /// Constructs a message with the UTF8 text provided whitout validate it.
+        /// Copies the message into a data buffer.
         /// </summary>
-        /// <param name="data">UTF8 text</param>
-        public RoomMessage(ArraySegment<byte> data)
+        /// <param name="data">Data buffer.</param>
+        /// <exception cref="ArgumentException"></exception>
+        public void CopyTo(ArraySegment<byte> data)
         {
-            Verb = new RoomVerb(data[..3]);
-            Channel = new RoomChannel(data[4..12]);
-            Content = new RoomContent(data[13..]);
+            if (data.Count < Length)
+                throw new ArgumentException("Data is too short");
+            Verb.CopyTo(data[..3]);
+            Channel.CopyTo(data[4..12]);
+            Content.CopyTo(data[13..]);
+            data[3] = (byte)' ';
+            data[12] = (byte)'\n';
+        }
+
+        /// <summary>
+        /// Create a Message with the utf8 data without validate it.
+        /// </summary>
+        /// <param name="verb">Verb utf8 data.</param>
+        /// <param name="channel">Channel utf8 data.</param>
+        /// <param name="content">Content utf8 data.</param>
+        public RoomMessage(ArraySegment<byte> verb, ArraySegment<byte> channel, ArraySegment<byte> content)
+        {
+            Verb = new RoomVerb(verb);
+            Channel = new RoomChannel(channel);
+            Content = new RoomContent(content);
         }
 
         /// <summary>
@@ -119,7 +121,8 @@ namespace KolibSoft.Rooms.Core
         {
             if (!Verify(utf8))
                 throw new FormatException($"Invalid message format: {Encoding.UTF8.GetString(utf8)}");
-            var message = new RoomMessage(utf8.ToArray());
+            var data = utf8.ToArray();
+            var message = new RoomMessage(data[..3], data[4..12], data[13..]);
             return message;
         }
 
@@ -132,9 +135,9 @@ namespace KolibSoft.Rooms.Core
         {
             if (!Verify(@string))
                 throw new FormatException($"Invalid message format: {new string(@string)}");
-            var utf8 = new byte[Encoding.UTF8.GetByteCount(@string)];
-            Encoding.UTF8.GetBytes(@string, utf8);
-            var message = new RoomMessage(utf8);
+            var data = new byte[Encoding.UTF8.GetByteCount(@string)];
+            Encoding.UTF8.GetBytes(@string, data);
+            var message = new RoomMessage(data[..3], data[4..12], data[13..]);
             return message;
         }
 
