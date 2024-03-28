@@ -19,7 +19,7 @@ class RoomMessage {
 }
 
 function parseRoomMessage(string = "") {
-    if (string.Length < 13 || string[3] != ' ' || string[12] != '\n')
+    if (string.length < 13 || string[3] != ' ' || string[12] != '\n')
         throw new Error(`Invalid message format: ${string}`);
     let verb = string.substring(0, 3);
     if (!verb.match(/[A-Za-z]{3}/))
