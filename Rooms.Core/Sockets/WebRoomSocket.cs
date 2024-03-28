@@ -26,8 +26,8 @@ namespace KolibSoft.Rooms.Core.Sockets
 
         public async Task ReceiveAsync(RoomMessage message)
         {
-            await Socket.ReceiveAsync(ReceiveBuffer, default);
-            message.CopyFrom(ReceiveBuffer);
+            var result = await Socket.ReceiveAsync(ReceiveBuffer, default);
+            message.CopyFrom(ReceiveBuffer[0..result.Count]);
         }
 
         protected virtual void Dispose(bool disposing)
