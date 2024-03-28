@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using KolibSoft.Rooms.Core;
+using KolibSoft.Rooms.Core.Services;
+using KolibSoft.Rooms.Core.Sockets;
 
 namespace KolibSoft.Rooms.Web;
 
@@ -48,7 +50,7 @@ public class Room
         Slots = slots;
         Pass = pass;
         Tag = tag;
-        Hub.LogWriter = Console.Out;
+        Hub.Logger = Console.Out;
     }
 
 }

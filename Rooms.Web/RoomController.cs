@@ -1,4 +1,5 @@
 using KolibSoft.Rooms.Core;
+using KolibSoft.Rooms.Core.Sockets;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 

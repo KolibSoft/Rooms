@@ -61,6 +61,8 @@ namespace KolibSoft.Rooms.Core.Sockets
             ReceiveBuffer = new byte[receiveBuffering];
         }
 
+        public const string SubProtocol = "Room";
+
     }
 
 }
