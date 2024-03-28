@@ -1,5 +1,7 @@
-﻿using System.Net;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Sockets;
+using System.Net.WebSockets;
 using KolibSoft.Rooms.Core.Protocol;
 using KolibSoft.Rooms.Core.Services;
 using KolibSoft.Rooms.Core.Sockets;
@@ -51,6 +53,26 @@ public static class Program
         return endpoint;
     }
 
+    public static Uri? GetUri(this string[] args, string name, string? hint = null, bool required = false)
+    {
+        Uri? uri;
+        while (!TryParse(args.GetArgument(name, hint, required)!, out uri) && required) continue;
+        return uri;
+        static bool TryParse(string value, [NotNullWhen(true)] out Uri? uri)
+        {
+            try
+            {
+                uri = new Uri(value);
+                return true;
+            }
+            catch
+            {
+                uri = null;
+                return false;
+            }
+        }
+    }
+
     public static async Task Main(params string[] args)
     {
         var mode = args.GetOption("mode", ["Server", "Client", "Service"], null, true);
@@ -71,7 +93,21 @@ public static class Program
                 _ = CommandAsync(socket);
                 await ListenAsync(socket);
             }
-            else if (impl == "WEB") { }
+            else if (impl == "WEB")
+            {
+                var uri = args.GetUri("uri") ?? new Uri("http://localhost:55000/");
+                System.Console.WriteLine($"Using uri: {uri}");
+                var uriString = uri.ToString();
+                var listener = new HttpListener();
+                listener.Prefixes.Add(uriString);
+                _ = ListenAsync(listener, buffering, rating);
+                var client = new ClientWebSocket();
+                client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
+                await client.ConnectAsync(new Uri(uriString.Replace("http", "ws")), default);
+                var socket = new WebRoomSocket(client, buffering);
+                _ = CommandAsync(socket);
+                await ListenAsync(socket);
+            }
         }
         else if (mode == "Client")
         {
@@ -85,7 +121,17 @@ public static class Program
                 _ = CommandAsync(socket);
                 await ListenAsync(socket);
             }
-            else if (impl == "WEB") { }
+            else if (impl == "WEB")
+            {
+                var uri = args.GetUri("uri") ?? new Uri("ws://localhost:55000/");
+                System.Console.WriteLine($"Using uri: {uri}");
+                var client = new ClientWebSocket();
+                client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
+                await client.ConnectAsync(uri, default);
+                var socket = new WebRoomSocket(client, buffering);
+                _ = CommandAsync(socket);
+                await ListenAsync(socket);
+            }
         }
         else if (mode == "Service")
         {
@@ -99,19 +145,59 @@ public static class Program
         var hub = new RoomHub { Logger = System.Console.Error };
         listener.Start();
         System.Console.WriteLine("TCP server started");
-        while (true)
+        var listening = true;
+        while (listening)
         {
-            var client = await listener.AcceptTcpClientAsync();
-            var socket = new TcpRoomSocket(client, buffering);
-            _ = hub.ListenAsync(socket, rating);
-            if (hub.Sockets.Length == 1) _ = hub.TransmitAsync();
+            try
+            {
+                var client = await listener.AcceptTcpClientAsync();
+                var socket = new TcpRoomSocket(client, buffering);
+                _ = hub.ListenAsync(socket, rating);
+                if (hub.Sockets.Length == 1) _ = hub.TransmitAsync();
+            }
+            catch (Exception error)
+            {
+                await System.Console.Error.WriteLineAsync($"TCP server error: {error}");
+            }
         }
+        System.Console.WriteLine("TCP server stopped");
+    }
+
+    public static async Task ListenAsync(HttpListener listener, int buffering, int rating)
+    {
+        var hub = new RoomHub { Logger = System.Console.Error };
+        listener.Start();
+        System.Console.WriteLine("WEB server started");
+        while (listener.IsListening)
+        {
+            try
+            {
+                var context = await listener.GetContextAsync();
+                if (context.Request.IsWebSocketRequest)
+                {
+                    var wcontext = await context.AcceptWebSocketAsync(WebRoomSocket.SubProtocol);
+                    var socket = new WebRoomSocket(wcontext.WebSocket, buffering);
+                    _ = hub.ListenAsync(socket, rating);
+                    if (hub.Sockets.Length == 1) _ = hub.TransmitAsync();
+                }
+                else
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    context.Response.Close();
+                }
+            }
+            catch (Exception error)
+            {
+                await System.Console.Error.WriteLineAsync($"WEB server error: {error}");
+            }
+        }
+        System.Console.WriteLine("WEB server stopped");
     }
 
     public static async Task ListenAsync(IRoomSocket socket)
     {
         var message = new RoomMessage();
-        System.Console.WriteLine("TCP client connected");
+        System.Console.WriteLine("Client connected");
         while (socket.IsAlive)
         {
             try
@@ -126,7 +212,7 @@ public static class Program
                 await System.Console.Error.WriteLineAsync($"Room client error: {error}");
             }
         }
-        System.Console.WriteLine("TCP client disconnected");
+        System.Console.WriteLine("Client disconnected");
     }
 
     public static async Task CommandAsync(IRoomSocket socket)
