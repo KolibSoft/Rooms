@@ -8,6 +8,29 @@ using KolibSoft.Rooms.Core.Sockets;
 
 namespace KolibSoft.Rooms.Console;
 
+public class Serice : RoomService
+{
+
+    protected override void OnConnect(IRoomSocket socket)
+    {
+        base.OnConnect(socket);
+        System.Console.WriteLine("Service is online");
+    }
+
+    protected override void OnDisconnect(IRoomSocket socket)
+    {
+        base.OnConnect(socket);
+        System.Console.WriteLine("Service is offline");
+    }
+
+    protected override void OnMessageReceived(RoomMessage message)
+    {
+        base.OnMessageReceived(message);
+        System.Console.WriteLine($"{message.Verb} [{message.Channel}] {message.Content}");
+    }
+
+}
+
 public static class Program
 {
 
@@ -135,8 +158,22 @@ public static class Program
         }
         else if (mode == "Service")
         {
-            if (impl == "TCP") { }
-            else if (impl == "WEB") { }
+            if (impl == "TCP")
+            {
+                var server = args.GetArgument("server") ?? "127.0.0.1:55000";
+                System.Console.WriteLine($"Using server: {server}");
+                var service = new Serice { Logger = System.Console.Error };
+                await service.ConnectAsync(server, RoomService.TCP, rating);
+                while (service.IsOnline) await Task.Delay(100);
+            }
+            else if (impl == "WEB")
+            {
+                var server = args.GetArgument("server") ?? "ws://localhost:55000/";
+                System.Console.WriteLine($"Using server: {server}");
+                var service = new Serice { Logger = System.Console.Error };
+                await service.ConnectAsync(server, RoomService.WEB, rating);
+                while (service.IsOnline) await Task.Delay(100);
+            }
         }
     }
 

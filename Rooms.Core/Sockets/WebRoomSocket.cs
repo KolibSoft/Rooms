@@ -20,12 +20,14 @@ namespace KolibSoft.Rooms.Core.Sockets
 
         public async Task SendAsync(RoomMessage message)
         {
+            if (disposed) throw new ObjectDisposedException(null);
             message.CopyTo(SendBuffer);
             await Socket.SendAsync(SendBuffer[0..message.Length], WebSocketMessageType.Binary, true, default);
         }
 
         public async Task ReceiveAsync(RoomMessage message)
         {
+            if (disposed) throw new ObjectDisposedException(null);
             var result = await Socket.ReceiveAsync(ReceiveBuffer, default);
             message.CopyFrom(ReceiveBuffer[0..result.Count]);
         }

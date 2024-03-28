@@ -12,8 +12,10 @@ using KolibSoft.Rooms.Core.Sockets;
 namespace KolibSoft.Rooms.Core.Services
 {
 
-    public class RoomHub
+    public class RoomHub : IDisposable
     {
+
+        private bool disposed;
 
         public ImmutableArray<IRoomSocket> Sockets { get; private set; } = ImmutableArray.Create<IRoomSocket>();
         public ImmutableQueue<RoomContext> Messages { get; private set; } = ImmutableQueue.Create<RoomContext>();
@@ -22,6 +24,7 @@ namespace KolibSoft.Rooms.Core.Services
 
         public async Task ListenAsync(IRoomSocket socket, int rating = 1024)
         {
+            if (disposed) throw new ObjectDisposedException(null);
             Sockets = Sockets.Add(socket);
             var message = new RoomMessage();
             var ttl = TimeSpan.FromSeconds(1);
@@ -56,6 +59,7 @@ namespace KolibSoft.Rooms.Core.Services
 
         public async Task TransmitAsync()
         {
+            if (disposed) throw new ObjectDisposedException(null);
             while (Sockets.Any())
             {
                 while (Messages.Any())
@@ -104,6 +108,23 @@ namespace KolibSoft.Rooms.Core.Services
                 }
                 await Task.Delay(100);
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing) foreach (var socket in Sockets) socket.Dispose();
+                Sockets = Sockets.Clear();
+                Messages = Messages.Clear();
+                disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
     }
