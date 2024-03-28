@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -8,7 +9,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     public readonly struct RoomChannel
     {
 
-        private readonly ArraySegment<byte> data;
+        internal readonly ArraySegment<byte> data;
 
         public override string ToString() => Encoding.UTF8.GetString(data);
 
@@ -109,6 +110,20 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (TryParse(chars, out RoomChannel channel)) return channel;
             throw new FormatException($"Invalid channel format: {new string(chars)}");
+        }
+
+        public static implicit operator int(RoomChannel channel)
+        {
+            var text = Encoding.UTF8.GetString(channel.data);
+            var number = int.Parse(text, NumberStyles.HexNumber);
+            return number;
+        }
+
+        public static implicit operator RoomChannel(int number)
+        {
+            var text = number.ToString("x");
+            var channel = Parse(text);
+            return channel;
         }
 
     }

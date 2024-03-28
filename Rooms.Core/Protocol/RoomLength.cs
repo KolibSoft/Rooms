@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -8,7 +9,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     public readonly struct RoomLength
     {
 
-        private readonly ArraySegment<byte> data;
+        internal readonly ArraySegment<byte> data;
 
         public override string ToString() => Encoding.UTF8.GetString(data);
 
@@ -109,6 +110,20 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (TryParse(chars, out RoomLength length)) return length;
             throw new FormatException($"Invalid length format: {new string(chars)}");
+        }
+
+        public static implicit operator int(RoomLength length)
+        {
+            var text = Encoding.UTF8.GetString(length.data);
+            var number = int.Parse(text);
+            return number;
+        }
+
+        public static implicit operator RoomLength(int number)
+        {
+            var text = number.ToString();
+            var length = Parse(text);
+            return length;
         }
 
     }
