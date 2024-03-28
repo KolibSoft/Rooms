@@ -8,7 +8,9 @@ namespace KolibSoft.Rooms.Core.Protocol
     public readonly struct RoomVerb
     {
 
-        internal readonly ArraySegment<byte> data;
+        private readonly ArraySegment<byte> data;
+        
+        public ReadOnlyMemory<byte> Data => data;
 
         public int Length => data.Count;
 
@@ -20,6 +22,12 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             var result = (obj is RoomVerb verb) && this == verb;
             return result;
+        }
+
+        public void CopyTo(Span<byte> target)
+        {
+            if (target.Length < data.Count) throw new ArgumentException("Target is too short");
+            data.AsSpan().CopyTo(target);
         }
 
         public RoomVerb(ArraySegment<byte> data)
