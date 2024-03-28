@@ -31,10 +31,10 @@ namespace KolibSoft.Rooms.Core.Protocol
         public void CopyFrom(ReadOnlySpan<byte> source)
         {
             var offset = 0;
-            var length = RoomVerb.Scan(source);
+            var length = RoomVerb.Scan(source[offset..]);
             Verb = new RoomVerb(source[offset..(offset + length)].ToArray());
             offset += Verb.Length + 1;
-            length = RoomChannel.Scan(source);
+            length = RoomChannel.Scan(source[offset..]);
             Channel = new RoomChannel(source[offset..(offset + length)].ToArray());
             offset += Channel.Length + 1;
             Content = new RoomContent(source[offset..].ToArray());
