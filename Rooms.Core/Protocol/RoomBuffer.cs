@@ -117,7 +117,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public override string ToString()
         {
-            var end = Verb.data.Count + Channel.data.Count + Length.data.Count + Content.data.Count + 3;
+            var end = Content.data.Offset + Content.data.Count;
             var text = Encoding.UTF8.GetString(Buffer[0..end]);
             return text;
         }
