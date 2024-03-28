@@ -9,7 +9,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     {
 
         private readonly ArraySegment<byte> data;
-        
+
         public ReadOnlyMemory<byte> Data => data;
 
         public int Length => data.Count;
@@ -67,13 +67,13 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static bool Verify(ReadOnlySpan<byte> utf8)
         {
-            var result = utf8.Length > 0 && Scan(utf8) == utf8.Length;
+            var result = Scan(utf8) == utf8.Length;
             return result;
         }
 
         public static bool Verify(ReadOnlySpan<char> chars)
         {
-            var result = chars.Length > 0 && Scan(chars) == chars.Length;
+            var result = Scan(chars) == chars.Length;
             return result;
         }
 

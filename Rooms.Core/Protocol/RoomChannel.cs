@@ -10,7 +10,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     {
 
         private readonly ArraySegment<byte> data;
-        
+
         public ReadOnlyMemory<byte> Data => data;
 
         public int Length => data.Count;
@@ -53,6 +53,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < utf8.Length && lookup(utf8[index]))
                 index++;
+            if (index != 8) return 0;
             return index;
             static bool lookup(int c) => c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
         }
@@ -62,19 +63,20 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < chars.Length && lookup(chars[index]))
                 index++;
+            if (index != 8) return 0;
             return index;
             static bool lookup(int c) => c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
         }
 
         public static bool Verify(ReadOnlySpan<byte> utf8)
         {
-            var result = utf8.Length > 0 && Scan(utf8) == utf8.Length;
+            var result = Scan(utf8) == utf8.Length;
             return result;
         }
 
         public static bool Verify(ReadOnlySpan<char> chars)
         {
-            var result = chars.Length > 0 && Scan(chars) == chars.Length;
+            var result = Scan(chars) == chars.Length;
             return result;
         }
 
@@ -135,6 +137,9 @@ namespace KolibSoft.Rooms.Core.Protocol
             var channel = Parse(text);
             return channel;
         }
+
+        public static readonly RoomChannel Loopback = RoomChannel.Parse("00000000");
+        public static readonly RoomChannel Broadcast = RoomChannel.Parse("ffffffff");
 
     }
 
