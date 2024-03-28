@@ -133,7 +133,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static implicit operator RoomChannel(int number)
         {
-            var text = number.ToString("x");
+            var text = number.ToString("x8");
             var channel = Parse(text);
             return channel;
         }

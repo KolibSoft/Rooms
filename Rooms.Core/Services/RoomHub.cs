@@ -76,15 +76,16 @@ namespace KolibSoft.Rooms.Core.Services
                     {
                         var hash = context.Socket.GetHashCode();
                         foreach (var socket in Sockets)
-                            try
-                            {
-                                context.Message.Channel = hash ^ socket.GetHashCode();
-                                await socket.SendAsync(context.Message);
-                            }
-                            catch (Exception error)
-                            {
-                                if (Logger != null) await Logger.WriteLineAsync($"Room Hub error: {error}");
-                            }
+                            if (socket != context.Socket)
+                                try
+                                {
+                                    context.Message.Channel = hash ^ socket.GetHashCode();
+                                    await socket.SendAsync(context.Message);
+                                }
+                                catch (Exception error)
+                                {
+                                    if (Logger != null) await Logger.WriteLineAsync($"Room Hub error: {error}");
+                                }
                     }
                     else
                     {
