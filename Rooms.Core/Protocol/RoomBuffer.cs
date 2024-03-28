@@ -11,6 +11,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public ArraySegment<byte> Buffer { get; private set; }
 
+        private int VerbOffset => 0;
         private RoomVerb? verb;
         public RoomVerb Verb
         {
@@ -19,15 +20,17 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (disposed) throw new ObjectDisposedException(null);
                 if (verb == null)
                 {
-                    var end = RoomVerb.Scan(Buffer[0..]);
-                    verb = new RoomVerb(Buffer[0..end]);
+                    var start = BlankOffset(VerbOffset);
+                    var end = start + RoomVerb.Scan(Buffer[start..]);
+                    verb = new RoomVerb(Buffer[start..end]);
                 }
                 return verb.Value;
             }
             set
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                value.data.CopyTo(Buffer[0..]);
+                var start = VerbOffset;
+                value.data.CopyTo(Buffer[start..]);
             }
         }
 
@@ -40,7 +43,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (disposed) throw new ObjectDisposedException(null);
                 if (channel == null)
                 {
-                    var start = ChannelOffset;
+                    var start = BlankOffset(ChannelOffset);
                     var end = start + RoomChannel.Scan(Buffer[start..]);
                     channel = new RoomChannel(Buffer[start..end]);
                 }
@@ -49,7 +52,8 @@ namespace KolibSoft.Rooms.Core.Protocol
             set
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var start = ChannelOffset;
+                Buffer.AsSpan()[ChannelOffset] = (byte)' ';
+                var start = ChannelOffset + 1;
                 value.data.CopyTo(Buffer[start..]);
             }
         }
@@ -63,7 +67,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (disposed) throw new ObjectDisposedException(null);
                 if (length == null)
                 {
-                    var start = LengthOffset;
+                    var start = BlankOffset(LengthOffset);
                     var end = start + RoomLength.Scan(Buffer[start..]);
                     length = new RoomLength(Buffer[start..end]);
                 }
@@ -72,7 +76,8 @@ namespace KolibSoft.Rooms.Core.Protocol
             set
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var start = LengthOffset;
+                Buffer.AsSpan()[LengthOffset] = (byte)' ';
+                var start = LengthOffset + 1;
                 value.data.CopyTo(Buffer[start..]);
             }
         }
@@ -86,7 +91,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (disposed) throw new ObjectDisposedException(null);
                 if (content == null)
                 {
-                    var start = ContentOffset;
+                    var start = BlankOffset(ContentOffset);
                     var end = start + (int)Length;
                     content = new RoomContent(Buffer[start..end]);
                 }
@@ -95,14 +100,24 @@ namespace KolibSoft.Rooms.Core.Protocol
             set
             {
                 if (disposed) throw new ObjectDisposedException(null);
-                var start = ContentOffset;
+                Buffer.AsSpan()[ContentOffset] = (byte)'\n';
+                var start = ContentOffset + 1;
                 value.data.CopyTo(Buffer[start..]);
             }
         }
 
+        private int BlankOffset(int offset)
+        {
+            var index = offset;
+            while (index < Buffer.Count && Lookup((char)Buffer[index]))
+                index++;
+            return index;
+            static bool Lookup(char c) => char.IsWhiteSpace(c);
+        }
+
         public override string ToString()
         {
-            var end = Verb.data.Count + Channel.data.Count + Length.data.Count + Content.data.Count;
+            var end = Verb.data.Count + Channel.data.Count + Length.data.Count + Content.data.Count + 3;
             var text = Encoding.UTF8.GetString(Buffer[0..end]);
             return text;
         }
