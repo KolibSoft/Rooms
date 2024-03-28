@@ -10,6 +10,8 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         internal readonly ArraySegment<byte> data;
 
+        public int Length => data.Count;
+
         public override string ToString() => Encoding.UTF8.GetString(data);
 
         public override int GetHashCode() => data.GetHashCode();
