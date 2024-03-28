@@ -6,13 +6,25 @@ using System.Text;
 namespace KolibSoft.Rooms.Core.Protocol
 {
 
+    /// <summary>
+    /// Represents a 8-digit hexadecimal value.
+    /// </summary>
     public readonly struct RoomChannel
     {
 
+        /// <summary>
+        /// Internal data.
+        /// </summary>
         private readonly ArraySegment<byte> data;
 
+        /// <summary>
+        /// Internal data.
+        /// </summary>
         public ReadOnlyMemory<byte> Data => data;
 
+        /// <summary>
+        /// Length in bytes.
+        /// </summary>
         public int Length => data.Count;
 
         public override string ToString() => Encoding.UTF8.GetString(data);
@@ -25,12 +37,21 @@ namespace KolibSoft.Rooms.Core.Protocol
             return result;
         }
 
+        /// <summary>
+        /// Copies the content into another buffer.
+        /// </summary>
+        /// <param name="target">Buffer to write.</param>
+        /// <exception cref="ArgumentException">If target is too short.</exception>
         public void CopyTo(Span<byte> target)
         {
             if (target.Length < data.Count) throw new ArgumentException("Target is too short");
             data.AsSpan().CopyTo(target);
         }
 
+        /// <summary>
+        /// Constructs a new channel without validate its data.
+        /// </summary>
+        /// <param name="data">Channel data.</param>
         public RoomChannel(ArraySegment<byte> data)
         {
             this.data = data;
@@ -48,6 +69,11 @@ namespace KolibSoft.Rooms.Core.Protocol
             return result;
         }
 
+        /// <summary>
+        /// Checks if a sequence starts with a valid channel data.
+        /// </summary>
+        /// <param name="utf8">Sequence to check.</param>
+        /// <returns>The length of the found channel data.</returns>
         public static int Scan(ReadOnlySpan<byte> utf8)
         {
             var index = 0;
@@ -58,6 +84,11 @@ namespace KolibSoft.Rooms.Core.Protocol
             static bool lookup(int c) => c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
         }
 
+        /// <summary>
+        /// Checks if a sequence starts with a valid channel data.
+        /// </summary>
+        /// <param name="chars">Sequence to check.</param>
+        /// <returns>The length of the found channel data.</returns>
         public static int Scan(ReadOnlySpan<char> chars)
         {
             var index = 0;
@@ -68,18 +99,34 @@ namespace KolibSoft.Rooms.Core.Protocol
             static bool lookup(int c) => c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
         }
 
+        /// <summary>
+        /// Checks if a sequence is a valid channel data.
+        /// </summary>
+        /// <param name="utf8">Sequence to check.</param>
+        /// <returns>True if is a valid channel data.</returns>
         public static bool Verify(ReadOnlySpan<byte> utf8)
         {
             var result = Scan(utf8) == utf8.Length;
             return result;
         }
 
+        /// <summary>
+        /// Checks if a sequence is a valid channel data.
+        /// </summary>
+        /// <param name="chars">Sequence to check.</param>
+        /// <returns>True if is a valid channel data.</returns>
         public static bool Verify(ReadOnlySpan<char> chars)
         {
             var result = Scan(chars) == chars.Length;
             return result;
         }
 
+        /// <summary>
+        /// Try to parse a sequence into a channel.
+        /// </summary>
+        /// <param name="utf8">Sequence to parse.</param>
+        /// <param name="channel">Channel representation.</param>
+        /// <returns>True if parse success.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8, out RoomChannel channel)
         {
             if (Verify(utf8))
@@ -96,6 +143,12 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
+        /// <summary>
+        /// Try to parse a sequence into a channel.
+        /// </summary>
+        /// <param name="chars">Sequence to parse.</param>
+        /// <param name="channel">Channel representation.</param>
+        /// <returns>True if parse success.</returns>
         public static bool TryParse(ReadOnlySpan<char> chars, out RoomChannel channel)
         {
             if (Verify(chars))
@@ -112,12 +165,24 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
+        /// <summary>
+        /// Parse a sequence into a channel.
+        /// </summary>
+        /// <param name="utf8">Sequence to parse.</param>
+        /// <returns>Channel representation.</returns>
+        /// <exception cref="FormatException">If the sequence is an invalid channel data.</exception>
         public static RoomChannel Parse(ReadOnlySpan<byte> utf8)
         {
             if (TryParse(utf8, out RoomChannel channel)) return channel;
             throw new FormatException($"Invalid channel format: {Encoding.UTF8.GetString(utf8)}");
         }
 
+        /// <summary>
+        /// Parse a sequence into a channel.
+        /// </summary>
+        /// <param name="chars">Sequence to parse.</param>
+        /// <returns>Channel representation.</returns>
+        /// <exception cref="FormatException">If the sequence is an invalid channel data.</exception>
         public static RoomChannel Parse(ReadOnlySpan<char> chars)
         {
             if (TryParse(chars, out RoomChannel channel)) return channel;
@@ -138,7 +203,14 @@ namespace KolibSoft.Rooms.Core.Protocol
             return channel;
         }
 
+        /// <summary>
+        /// Loopback representation (00000000).
+        /// </summary>
         public static readonly RoomChannel Loopback = RoomChannel.Parse("00000000");
+
+        /// <summary>
+        /// Loopback representation (ffffffff).
+        /// </summary>
         public static readonly RoomChannel Broadcast = RoomChannel.Parse("ffffffff");
 
     }

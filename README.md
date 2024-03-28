@@ -24,7 +24,7 @@ MSG 12345678
 UTF8 Text or Binary data
 ```
 
-- **Room Verb** is a sequence of 3 uppercase or lowercase letters of the ASCII code. The **Room Verb** does not have any special meaning for the server that relays the messages, it is the sockets that receive the message that are in charge of interpreting it and how to act in response.
+- **Room Verb** is a variable length sequence of uppercase or lowercase letters of the ASCII code. The **Room Verb** does not have any special meaning for the server that relays the messages, it is the sockets that receive the message that are in charge of interpreting it and how to act in response.
 
 - **Room Channel** is an 8-digit hexadecimal number that represents a 32-bit unsigned integer. The **Room Channel** represents the specific connection point of two sockets, it is the server that is responsible for providing the same channel identifier for both parties, this is achieved by performing an XOR operation between the socket identifiers.
 

@@ -5,13 +5,25 @@ using System.Text;
 namespace KolibSoft.Rooms.Core.Protocol
 {
 
+    /// <summary>
+    /// Represents a variable length verb value.
+    /// </summary>
     public readonly struct RoomVerb
     {
 
+        /// <summary>
+        /// Internal data.
+        /// </summary>
         private readonly ArraySegment<byte> data;
 
+        /// <summary>
+        /// Internal data.
+        /// </summary>
         public ReadOnlyMemory<byte> Data => data;
 
+        /// <summary>
+        /// Length in bytes.
+        /// </summary>
         public int Length => data.Count;
 
         public override string ToString() => Encoding.UTF8.GetString(data);
@@ -24,12 +36,21 @@ namespace KolibSoft.Rooms.Core.Protocol
             return result;
         }
 
+        /// <summary>
+        /// Copies the content into another buffer.
+        /// </summary>
+        /// <param name="target">Buffer to write.</param>
+        /// <exception cref="ArgumentException">If target is too short.</exception>
         public void CopyTo(Span<byte> target)
         {
             if (target.Length < data.Count) throw new ArgumentException("Target is too short");
             data.AsSpan().CopyTo(target);
         }
 
+        /// <summary>
+        /// Constructs a new verb without validate its data.
+        /// </summary>
+        /// <param name="data">Verb data.</param>
         public RoomVerb(ArraySegment<byte> data)
         {
             this.data = data;
@@ -47,6 +68,11 @@ namespace KolibSoft.Rooms.Core.Protocol
             return result;
         }
 
+        /// <summary>
+        /// Checks if a sequence starts with a valid verb data.
+        /// </summary>
+        /// <param name="utf8">Sequence to check.</param>
+        /// <returns>The length of the found verb data.</returns>
         public static int Scan(ReadOnlySpan<byte> utf8)
         {
             var index = 0;
@@ -56,6 +82,11 @@ namespace KolibSoft.Rooms.Core.Protocol
             static bool lookup(int c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
         }
 
+        /// <summary>
+        /// Checks if a sequence starts with a valid verb data.
+        /// </summary>
+        /// <param name="chars">Sequence to check.</param>
+        /// <returns>The length of the found verb data.</returns>
         public static int Scan(ReadOnlySpan<char> chars)
         {
             var index = 0;
@@ -65,18 +96,34 @@ namespace KolibSoft.Rooms.Core.Protocol
             static bool lookup(int c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
         }
 
+        /// <summary>
+        /// Checks if a sequence is a valid verb data.
+        /// </summary>
+        /// <param name="utf8">Sequence to check.</param>
+        /// <returns>True if is a valid verb data.</returns>
         public static bool Verify(ReadOnlySpan<byte> utf8)
         {
             var result = Scan(utf8) == utf8.Length;
             return result;
         }
 
+        /// <summary>
+        /// Checks if a sequence is a valid verb data.
+        /// </summary>
+        /// <param name="chars">Sequence to check.</param>
+        /// <returns>True if is a valid verb data.</returns>
         public static bool Verify(ReadOnlySpan<char> chars)
         {
             var result = Scan(chars) == chars.Length;
             return result;
         }
 
+        /// <summary>
+        /// Try to parse a sequence into a verb.
+        /// </summary>
+        /// <param name="utf8">Sequence to parse.</param>
+        /// <param name="verb">Verb representation.</param>
+        /// <returns>True if parse success.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8, out RoomVerb verb)
         {
             if (Verify(utf8))
@@ -93,6 +140,12 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
+        /// <summary>
+        /// Try to parse a sequence into a verb.
+        /// </summary>
+        /// <param name="chars">Sequence to parse.</param>
+        /// <param name="verb">Verb representation.</param>
+        /// <returns>True if parse success.</returns>
         public static bool TryParse(ReadOnlySpan<char> chars, out RoomVerb verb)
         {
             if (Verify(chars))
@@ -109,12 +162,24 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
+        /// <summary>
+        /// Parse a sequence into a verb.
+        /// </summary>
+        /// <param name="utf8">Sequence to parse.</param>
+        /// <returns>Verb representation.</returns>
+        /// <exception cref="FormatException">If the sequence is an invalid verb data.</exception>
         public static RoomVerb Parse(ReadOnlySpan<byte> utf8)
         {
             if (TryParse(utf8, out RoomVerb verb)) return verb;
             throw new FormatException($"Invalid verb format: {Encoding.UTF8.GetString(utf8)}");
         }
 
+        /// <summary>
+        /// Parse a sequence into a verb.
+        /// </summary>
+        /// <param name="chars">Sequence to parse.</param>
+        /// <returns>Verb representation.</returns>
+        /// <exception cref="FormatException">If the sequence is an invalid verb data.</exception>
         public static RoomVerb Parse(ReadOnlySpan<char> chars)
         {
             if (TryParse(chars, out RoomVerb verb)) return verb;

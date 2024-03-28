@@ -16,7 +16,7 @@ public class RoomMessageTests
         {
             Verb = RoomVerb.Parse(verb),
             Channel = RoomChannel.Parse(channel),
-            Content = RoomContent.Parse(content)
+            Content = RoomContent.Create(content)
         };
         var buffer = new byte[message.Length];
         message.CopyTo(buffer);
