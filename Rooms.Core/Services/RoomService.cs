@@ -14,20 +14,51 @@ using KolibSoft.Rooms.Core.Sockets;
 namespace KolibSoft.Rooms.Core.Services
 {
 
+    /// <summary>
+    /// Base class to implement Room services.
+    /// </summary>
     public class RoomService : IDisposable
     {
 
+        /// <summary>
+        /// Dipose flag.
+        /// </summary>
         private bool disposed;
 
+        /// <summary>
+        /// Available connector implementations.
+        /// </summary>
         public Dictionary<string, RoomConnector> Connectors { get; }
 
+        /// <summary>
+        /// Current working socket.
+        /// </summary>
         public IRoomSocket? Socket { get; private set; }
 
+        /// <summary>
+        /// Checks if the underlying socket is alive.
+        /// </summary>
         public bool IsOnline => Socket?.IsAlive == true;
 
+        /// <summary>
+        /// Writer to report errors.
+        /// </summary>
         public TextWriter? Logger { get; set; }
 
+        /// <summary>
+        /// Called after open a connection.
+        /// </summary>
+        /// <param name="socket"></param>
         protected virtual void OnConnect(IRoomSocket socket) { }
+
+        /// <summary>
+        /// Connect to a Room server using the specific implementation.
+        /// </summary>
+        /// <param name="connstring">Implementation specific connection string.</param>
+        /// <param name="impl">Implementation identifier.</param>
+        /// <param name="rating">Max amount of bytes received per second.</param>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
         public async Task ConnectAsync(string connstring, string impl, int rating = 1024)
         {
             if (disposed) throw new ObjectDisposedException(null);
@@ -48,7 +79,17 @@ namespace KolibSoft.Rooms.Core.Services
             }
         }
 
+        /// <summary>
+        /// Called after close a connection.
+        /// </summary>
+        /// <param name="socket"></param>
         protected virtual void OnDisconnect(IRoomSocket socket) { }
+
+        /// <summary>
+        /// Disconnects from the server.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
         public async Task DisconnectAsync()
         {
             if (disposed) throw new ObjectDisposedException(null);
@@ -66,7 +107,19 @@ namespace KolibSoft.Rooms.Core.Services
             }
         }
 
+        /// <summary>
+        /// Called after receive a message.
+        /// </summary>
+        /// <param name="message"></param>
         protected virtual void OnMessageReceived(RoomMessage message) { }
+
+        /// <summary>
+        /// Start listen the socket incoming messages.
+        /// </summary>
+        /// <param name="socket">Socket to listen.</param>
+        /// <param name="rating">Max amount of bytes received per second.</param>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
         private async Task ListenAsync(IRoomSocket socket, int rating = 1024)
         {
             if (disposed) throw new ObjectDisposedException(null);
@@ -101,7 +154,18 @@ namespace KolibSoft.Rooms.Core.Services
             OnDisconnect(socket);
         }
 
+        /// <summary>
+        /// Called after send a message.
+        /// </summary>
+        /// <param name="message"></param>
         protected virtual void OnMessageSent(RoomMessage message) { }
+
+        /// <summary>
+        /// Send a message.
+        /// </summary>
+        /// <param name="message">Message to send.</param>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
         public async Task SendAsync(RoomMessage message)
         {
             if (disposed) throw new ObjectDisposedException(null);
@@ -117,6 +181,9 @@ namespace KolibSoft.Rooms.Core.Services
                 }
         }
 
+        /// <summary>
+        /// Constructs a default service.
+        /// </summary>
         public RoomService()
         {
             Connectors = new Dictionary<string, RoomConnector>
@@ -126,9 +193,19 @@ namespace KolibSoft.Rooms.Core.Services
             };
         }
 
+        /// <summary>
+        /// TCP implementation identifier.
+        /// </summary>
         public const string TCP = "TCP";
+
+        /// <summary>
+        /// WEB implementatuon identifier.
+        /// </summary>
         public const string WEB = "WEB";
 
+        /// <summary>
+        /// Default TCP implementation connector.
+        /// </summary>
         public static readonly RoomConnector TcpConnector = async (connstring) =>
         {
             connstring = connstring.Replace("localhost", "127.0.0.1");
@@ -140,6 +217,9 @@ namespace KolibSoft.Rooms.Core.Services
             return new TcpRoomSocket(client);
         };
 
+        /// <summary>
+        /// Default WEB implementation connector.
+        /// </summary>
         public static readonly RoomConnector WebConnector = async (connstring) =>
         {
             var cancellation = new CancellationTokenSource();
@@ -151,6 +231,10 @@ namespace KolibSoft.Rooms.Core.Services
             return new WebRoomSocket(client);
         };
 
+        /// <summary>
+        /// Internal dispose implementation.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)

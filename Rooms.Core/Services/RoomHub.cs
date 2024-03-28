@@ -12,16 +12,39 @@ using KolibSoft.Rooms.Core.Sockets;
 namespace KolibSoft.Rooms.Core.Services
 {
 
+    /// <summary>
+    /// Representas a central point to relay socket messages.
+    /// </summary>
     public class RoomHub : IDisposable
     {
 
+        /// <summary>
+        /// Dispose flag.
+        /// </summary>
         private bool disposed;
 
+        /// <summary>
+        /// Listening sockets.
+        /// </summary>
         public ImmutableArray<IRoomSocket> Sockets { get; private set; } = ImmutableArray.Create<IRoomSocket>();
+
+        /// <summary>
+        /// Received messages.
+        /// </summary>
         public ImmutableQueue<RoomContext> Messages { get; private set; } = ImmutableQueue.Create<RoomContext>();
 
+        /// <summary>
+        /// Writer to report errors.
+        /// </summary>
         public TextWriter? Logger { get; set; }
 
+        /// <summary>
+        /// Start listen the socket incoming messages.
+        /// </summary>
+        /// <param name="socket">Socket to listen.</param>
+        /// <param name="rating">Max amount of bytes received per second.</param>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException">If the hub was disposed.</exception>
         public async Task ListenAsync(IRoomSocket socket, int rating = 1024)
         {
             if (disposed) throw new ObjectDisposedException(null);
@@ -57,6 +80,11 @@ namespace KolibSoft.Rooms.Core.Services
             Sockets = Sockets.Remove(socket);
         }
 
+        /// <summary>
+        /// Start to route the received messages.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="ObjectDisposedException">If the hub was disposed.</exception>
         public async Task TransmitAsync()
         {
             if (disposed) throw new ObjectDisposedException(null);
@@ -110,6 +138,10 @@ namespace KolibSoft.Rooms.Core.Services
             }
         }
 
+        /// <summary>
+        /// Internal dispose implementation.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)
