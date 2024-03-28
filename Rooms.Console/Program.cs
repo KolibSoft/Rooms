@@ -175,6 +175,9 @@ public static class Program
                 while (service.IsOnline) await Task.Delay(100);
             }
         }
+        await Task.Delay(100);
+        System.Console.Write($"Press a key to exit...");
+        System.Console.ReadKey();
     }
 
     public static async Task ListenAsync(TcpListener listener, int buffering, int rating)
