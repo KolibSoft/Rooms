@@ -182,6 +182,25 @@ namespace KolibSoft.Rooms.Core.Services
         }
 
         /// <summary>
+        /// Internal dispose implementation.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing) Socket?.Dispose();
+                disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
         /// Constructs a default service.
         /// </summary>
         public RoomService()
@@ -230,25 +249,6 @@ namespace KolibSoft.Rooms.Core.Services
             await client.ConnectAsync(uri, cancellation.Token);
             return new WebRoomSocket(client);
         };
-
-        /// <summary>
-        /// Internal dispose implementation.
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposed)
-            {
-                if (disposing) Socket?.Dispose();
-                disposed = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
 
     }
 

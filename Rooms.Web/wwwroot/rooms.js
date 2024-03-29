@@ -5,7 +5,7 @@ class RoomVerb {
 
     #data;
 
-    constructor(data) {
+    constructor(data = new Uint8Array()) {
         this.#data = data;
     }
 
@@ -13,7 +13,7 @@ class RoomVerb {
         return this.#data;
     }
 
-    get Length() {
+    get length() {
         return this.#data.length;
     }
 
@@ -48,6 +48,7 @@ class RoomVerb {
     }
 
     static tryParse(utf8) {
+        if (typeof utf8 === 'string') utf8 = encoder.encode(utf8);
         if (this.verify(utf8)) {
             let data = new Uint8Array(utf8.length);
             utf8.forEach((value, index) => data[index] = value);
@@ -70,7 +71,7 @@ class RoomChannel {
 
     #data;
 
-    constructor(data) {
+    constructor(data = new Uint8Array()) {
         this.#data = data;
     }
 
@@ -78,7 +79,7 @@ class RoomChannel {
         return this.#data;
     }
 
-    get Length() {
+    get length() {
         return this.#data.length;
     }
 
@@ -123,6 +124,7 @@ class RoomChannel {
     }
 
     static tryParse(utf8) {
+        if (typeof utf8 === 'string') utf8 = encoder.encode(utf8);
         if (this.verify(utf8)) {
             let data = new Uint8Array(utf8.length);
             utf8.forEach((value, index) => data[index] = value);
@@ -151,7 +153,7 @@ class RoomContent {
 
     #data;
 
-    constructor(data) {
+    constructor(data = new Uint8Array()) {
         this.#data = data;
     }
 
@@ -159,7 +161,7 @@ class RoomContent {
         return this.#data;
     }
 
-    get Length() {
+    get length() {
         return this.#data.length;
     }
 
@@ -180,6 +182,7 @@ class RoomContent {
     }
 
     static create(utf8) {
+        if (typeof utf8 === 'string') utf8 = encoder.encode(utf8);
         let data = new Uint8Array(utf8.length);
         utf8.forEach((value, index) => data[index] = value);
         return new RoomContent(data);
@@ -192,13 +195,13 @@ class RoomContent {
 class RoomMessage {
 
     constructor() {
-        this.verb = null;
-        this.channel = null;
-        this.content = null;
+        this.verb = new RoomVerb();
+        this.channel = new RoomChannel();
+        this.content = new RoomContent();
     }
 
     get length() {
-        return this.verb.Length + this.channel.Length + 1 + (this.content && this.content.Length > 0 ? this.content.Length + 1 : 0);
+        return this.verb.length + this.channel.length + 1 + (this.content && this.content.length > 0 ? this.content.length + 1 : 0);
     }
 
     toString() {
@@ -209,12 +212,12 @@ class RoomMessage {
         if (target.length < this.length) throw new Error("Target is too short");
         let offset = 0;
         this.verb.copyTo(target.subarray(offset));
-        offset += this.verb.Length;
+        offset += this.verb.length;
         target[offset] = 32;
         offset += 1;
         this.channel.copyTo(target.subarray(offset));
-        offset += this.channel.Length;
-        if (this.content && this.content.Length > 0) {
+        offset += this.channel.length;
+        if (this.content && this.content.length > 0) {
             target[offset] = 32;
             this.content.copyTo(target.subarray(offset + 1));
         }
@@ -224,10 +227,10 @@ class RoomMessage {
         let offset = 0;
         let length = RoomVerb.scan(source.subarray(offset));
         this.verb = new RoomVerb(source.subarray(offset, offset + length));
-        offset += this.verb.Length + 1;
+        offset += this.verb.length + 1;
         length = RoomChannel.scan(source.subarray(offset));
         this.channel = new RoomChannel(source.subarray(offset, offset + length));
-        offset += this.channel.Length;
+        offset += this.channel.length;
         if (offset < source.length) this.content = new RoomContent(source.slice(offset + 1));
     }
 
@@ -246,6 +249,7 @@ class RoomMessage {
     }
 
     static tryParse(utf8) {
+        if (typeof utf8 === 'string') utf8 = encoder.encode(utf8);
         if (this.verify(utf8)) {
             const data = new Uint8Array(utf8.length);
             utf8.forEach((value, index) => data[index] = value);
@@ -291,8 +295,13 @@ class WebRoomSocket {
 
     async sendAsync(message) {
         if (this.#disposed) throw new Error('Socket has been disposed');
-        message.copyTo(this.#sendBuffer);
-        this.#socket.send(this.#sendBuffer.slice(0, message.length), { binary: true });
+        await new Promise((resolve, reject) => {
+            message.copyTo(this.#sendBuffer);
+            this.#socket.onerror = event => reject();
+            this.#socket.onclose = event => reject();
+            this.#socket.send(this.#sendBuffer.slice(0, message.length), { binary: true });
+            resolve();
+        });
     }
 
     async receiveAsync(message) {
@@ -303,6 +312,7 @@ class WebRoomSocket {
                 message.copyFrom(this.#receiveBuffer);
                 resolve();
             };
+            this.#socket.onerror = event => reject();
             this.#socket.onclose = event => reject();
         });
     }
@@ -320,10 +330,125 @@ class WebRoomSocket {
 
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////
+
+class RoomService {
+
+    #disposed;
+    #socket;
+
+    constructor() {
+        this.#disposed = false;
+        this.connectors = {
+            [RoomService.WEB]: RoomService.WebConnector
+        };
+        this.#socket = null;
+        this.logger = null;
+    }
+
+    get socket() { return this.#socket; }
+
+    get isOnline() {
+        return this.#socket && this.#socket.IsAlive;
+    }
+
+    onConnect(socket) { }
+    async connectAsync(connstring, impl, rating = 1024) {
+        if (this.#disposed) throw new Error('Service has been disposed');
+        try {
+            await this.disconnectAsync();
+            let connector = this.connectors[impl];
+            if (connector) {
+                this.#socket = await connector(connstring);
+                this.onConnect(this.#socket);
+                this.listenAsync(this.#socket, rating);
+            }
+        } catch (error) {
+            if (this.logger) this.logger(`Room Service error: ${error}`);
+        }
+    }
+
+    onDisconnect(socket) { }
+    async disconnectAsync() {
+        if (this.#disposed) throw new Error('Service has been disposed');
+        try {
+            if (this.#socket) {
+                this.#socket.dispose();
+                this.onDisconnect(this.#socket);
+            }
+        } catch (error) {
+            if (this.logger) this.logger(`Room Service error: ${error}`);
+        }
+    }
+
+    onMessageReceived(message) { }
+    async listenAsync(socket, rating = 1024) {
+        let message = new RoomMessage();
+        let ttl = 1000;
+        let rate = 0;
+        let stopwatch = new Date();
+        while (socket.isAlive) {
+            try {
+                await socket.receiveAsync(message);
+                rate += message.length;
+                if (rate > rating) {
+                    socket.dispose();
+                    break;
+                }
+                if (new Date() - stopwatch >= ttl) {
+                    rate = 0;
+                    stopwatch = new Date();
+                }
+                this.onMessageReceived(message);
+            } catch (error) {
+                if (this.logger) this.logger(`Room Service error: ${error}`);
+            }
+        }
+        this.onDisconnect(socket);
+    }
+
+    onMessageSent(message) { }
+    async sendAsync(message) {
+        if (this.#disposed) throw new Error('Service has been disposed');
+        if (this.#socket) {
+            try {
+                await this.#socket.sendAsync(message);
+                this.onMessageSent(message);
+            } catch (error) {
+                if (this.logger) this.logger(`Room Service error: ${error}`);
+            }
+        }
+    }
+
+    dispose() {
+        if (!this.#disposed) {
+            if (this.#socket) this.#socket.dispose();
+            this.#disposed = true;
+        }
+    }
+
+    static get WEB() { return "WEB" };
+
+    static #webConnector = async (connstring) => {
+        return await new Promise((resolve, reject) => {
+            let client = new WebSocket(connstring, WebRoomSocket.SubProtocol);
+            client.onopen = event => {
+                let socket = new WebRoomSocket(client);
+                resolve(socket);
+            };
+            client.onerror = event => reject();
+        });
+    };
+
+    static get WebConnector() { return this.#webConnector; }
+
+}
+
 export {
     RoomVerb,
     RoomChannel,
     RoomContent,
     RoomMessage,
-    WebRoomSocket
+    WebRoomSocket,
+    RoomService
 }
