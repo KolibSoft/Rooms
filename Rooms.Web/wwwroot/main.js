@@ -1,4 +1,4 @@
-import { RoomProtocol, parseRoomMessage, RoomLoopback, RoomBroadcast, RoomMessage } from "./rooms.js";
+import { RoomSubProtocol, parseRoomMessage, RoomLoopback, RoomBroadcast, RoomMessage } from "./rooms.js";
 
 let socket = null;
 let logs = [];
@@ -57,7 +57,7 @@ function joinRoom() {
     endpoint.searchParams.set("pass", tRoomPass.value);
     endpoint.searchParams.set("tag", tRoomTag.value);
     endpoint.searchParams.set("buffering", tRoomBuffering.value);
-    socket = new WebSocket(endpoint.href, RoomProtocol);
+    socket = new WebSocket(endpoint.href, RoomSubProtocol);
 
     socket.addEventListener("open", function () {
         if (socket == this) {
@@ -213,3 +213,6 @@ bSend.disabled = true;
 resetRoomLog();
 resetMessageOptions();
 fetchRoomList();
+
+console.log((await parseRoomMessage(new Blob(["Message 12345678"]))).toString());
+console.log((await parseRoomMessage(new Blob(["Message 12345678 CONTENT"]))).toString());

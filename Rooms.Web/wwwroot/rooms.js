@@ -1,37 +1,50 @@
-const RoomProtocol = "Room";
-const RoomNoVerb = "NNN";
+const RoomSubProtocol = "Room";
 const RoomLoopback = "00000000";
 const RoomBroadcast = "ffffffff";
-const RoomNoContent = "";
+const encoder = new TextEncoder('utf-8');
+const decoder = new TextDecoder('utf-8');
 
 class RoomMessage {
 
-    constructor(verb = RoomNoVerb, channel = RoomLoopback, content = RoomNoContent) {
-        this.verb = verb;
-        this.channel = channel;
-        this.content = content;
+    constructor(verb, channel, content) {
+        this.verb = encoder.encode(verb);
+        this.channel = encoder.encode(channel);
+        this.content = encoder.encode(content);
     }
 
     toString() {
-        return `${this.verb} ${this.channel}\n${this.content}`;
+        return `${decoder.decode(this.verb)} ${decoder.decode(this.channel)} ${decoder.decode(this.content)}`;
     }
 
 }
 
-function parseRoomMessage(string = "") {
-    if (string.length < 13 || string[3] != ' ' || string[12] != '\n')
-        throw new Error(`Invalid message format: ${string}`);
-    let verb = string.substring(0, 3);
-    if (!verb.match(/[A-Za-z]{3}/))
-        throw new Error(`Invalid verb format: ${verb}`);
-    let channel = string.substring(4, 12);
-    if (!channel.match(/[0-9A-Fa-f]{8}/))
-        throw new Error(`Invalid channel format: ${channel}`);
-    let content = string.substring(13);
+function scanVerb(utf8) {
+    var index = 0;
+    while (index < utf8.length && lookup(utf8[index]))
+        index++;
+    return index;
+    function lookup(c) { return c === 95 || (c >= 65 && c <= 90) || (c >= 97 && c <= 122); }
+}
+
+function scanChannel(utf8) {
+    var index = 0;
+    while (index < utf8.length && lookup(utf8[index]))
+        index++;
+    return index == 8 ? 8 : 0;
+    function lookup(c) { return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102); }
+}
+
+async function parseRoomMessage(blob) {
     let message = new RoomMessage();
-    message.verb = verb;
-    message.channel = channel;
-    message.content = content;
+    let buffer = new Uint8Array(await blob.arrayBuffer());
+    let offset = 0;
+    let index = scanVerb(buffer.slice(offset));
+    message.verb = buffer.slice(offset, offset + index);
+    offset += index + 1;
+    index = scanChannel(buffer.slice(offset));
+    message.channel = buffer.slice(offset, offset + index);
+    offset += index;
+    if (offset < buffer.length) message.content = buffer.slice(offset + 1);
     return message;
 }
 
@@ -44,11 +57,9 @@ function convertChannel(srcChannel, dstChannel) {
 }
 
 export {
-    RoomProtocol,
-    RoomNoVerb,
+    RoomSubProtocol,
     RoomLoopback,
     RoomBroadcast,
-    RoomNoContent,
     RoomMessage,
     parseRoomMessage,
     convertChannel

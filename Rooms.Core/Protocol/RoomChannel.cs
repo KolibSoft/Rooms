@@ -79,8 +79,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < utf8.Length && lookup(utf8[index]))
                 index++;
-            if (index != 8) return 0;
-            return index;
+            return index == 8 ? 8 : 0;
             static bool lookup(int c) => c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
         }
 
@@ -94,8 +93,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < chars.Length && lookup(chars[index]))
                 index++;
-            if (index != 8) return 0;
-            return index;
+            return index == 8 ? 8 : 0;
             static bool lookup(int c) => c >= '0' && c <= '9' || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
         }
 
