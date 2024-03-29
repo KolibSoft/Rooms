@@ -297,12 +297,13 @@ class WebRoomSocket {
 
     async receiveAsync(message) {
         if (this.#disposed) throw new Error('Socket has been disposed');
-        await new Promise(resolve => {
+        await new Promise((resolve, reject) => {
             this.#socket.onmessage = event => {
                 this.#receiveBuffer = new Uint8Array(event.data);
                 message.copyFrom(this.#receiveBuffer);
                 resolve();
             };
+            this.#socket.onclose = event => reject();
         });
     }
 
