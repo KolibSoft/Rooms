@@ -1,6 +1,8 @@
 const decoder = new TextDecoder("utf-8");
 const encoder = new TextEncoder("utf-8");
 
+async function delay(ms) { await new Promise(resolve => setTimeout(resolve, ms)); }
+
 class RoomVerb {
 
     #data;
@@ -295,13 +297,14 @@ class WebRoomSocket {
 
     async sendAsync(message) {
         if (this.#disposed) throw new Error('Socket has been disposed');
-        await new Promise((resolve, reject) => {
+        await new Promise(async (resolve, reject) => {
             message.copyTo(this.#sendBuffer);
             this.#socket.onerror = event => reject();
             this.#socket.onclose = event => reject();
             this.#socket.send(this.#sendBuffer.slice(0, message.length), { binary: true });
             resolve();
         });
+        await delay(100);
     }
 
     async receiveAsync(message) {

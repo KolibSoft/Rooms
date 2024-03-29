@@ -9,5 +9,4 @@ service.onDisconnect = socket => console.log("Service offline");
 service.onMessageReceived = message => console.log(`${message.verb} [${message.channel}] ${message.content}`);
 await service.connectAsync("ws://localhost:5000/api/rooms/join", RoomService.WEB);
 await service.sendAsync(RoomMessage.parse("ECHO 00000000"));
-await new Promise(resolve => setTimeout(resolve, 100));
 await service.sendAsync(RoomMessage.parse("PING ffffffff PONG"));
