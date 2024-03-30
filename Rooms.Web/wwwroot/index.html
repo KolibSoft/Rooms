@@ -16,9 +16,29 @@
 
     <div>
         <h2>Room Server</h2>
-        <label>Server</label>
         <input id="iServer" placeholder="Server" />
-        <input id="bRefresh" type="button" value="Refresh"/>
+    </div>
+
+    <div>
+        <h2>Room List</h2>
+        <div id="dList"></div>
+    </div>
+
+    <div>
+        <h2>Join Room</h2>
+        <input id="iCode" placeholder="Code" maxlength="8" />
+        <input id="iSlots" placeholder="Slots" type="number" min="1" max="16" />
+        <input id="iPass" placeholder="Pass" maxlength="32" />
+        <input id="iTag" placeholder="Tag" maxlength="128" />
+        <input id="iBuff" placeholder="Buffering" type="number" min="1024" max="67108864" />
+        <input id="iRate" placeholder="Rating" type="number" min="1024" max="67108864" />
+        <input id="iJoin" type="button" value="Join" />
+    </div>
+
+    <div>
+        <h2>Room Service</h2>
+        <textarea id="tLog" readonly></textarea>
+        <input id="iCommand" placeholder="&lt;VERB&gt; &lt;CHANNEL&gt; [CONTENT]" />
     </div>
 
 </body>

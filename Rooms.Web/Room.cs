@@ -17,11 +17,11 @@ public class Room
     public int Count => Hub.Sockets.Length;
     public bool IsAlive { get; private set; } = false;
 
-    public async Task JoinAsync(IRoomSocket socket, string? pass)
+    public async Task JoinAsync(IRoomSocket socket, string? pass = null, int rating = 1024)
     {
         if (Count >= Slots || Pass != pass)
             throw new InvalidOperationException();
-        await Hub.ListenAsync(socket, 1024 * 1024);
+        await Hub.ListenAsync(socket, rating);
     }
 
     public async void RunAsync(TimeSpan ttl)

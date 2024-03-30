@@ -8,3 +8,68 @@
 html {
     background-color: gray;
 }
+
+body {
+    padding: 1em;
+}
+
+h2 {
+    margin-top: 1em;
+}
+
+label {
+    display: inline-block;
+    margin-top: 1em;
+}
+
+input {
+    display: inline-block;
+    margin-top: 0.5em;
+    padding: 0.25em 0.5em;
+    border-radius: 0.25em;
+}
+
+#iServer {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#iCode {
+    width: 8ch;
+}
+
+#iSlots {
+    width: 8ch;
+}
+
+#iBuff {
+    width: 12ch;
+}
+
+#iRate {
+    width: 8ch;
+}
+
+input[type="button"] {
+    cursor: pointer;
+    background: silver;
+}
+
+input[type="button"]:active {
+    cursor: pointer;
+    background: darkgray;
+}
+
+textarea {
+    width: 100%;
+    height: 10lh;
+    box-sizing: border-box;
+    padding: 1ch;
+}
+
+#iCommand {
+    padding: 1ch;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+}

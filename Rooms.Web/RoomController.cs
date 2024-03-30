@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace KolibSoft.Rooms.Web;
 
 [EnableCors("PUBLIC")]
-[Route("/api/rooms")]
+[Route("/api/room")]
 public class RoomController : ControllerBase
 {
 
@@ -31,7 +31,7 @@ public class RoomController : ControllerBase
     }
 
     [HttpGet("join")]
-    public async Task JoinAsync([FromQuery] int code, [FromQuery] int slots = 4, [FromQuery] string? pass = null, [FromQuery] string? tag = null, [FromQuery] int buffering = 1024)
+    public async Task JoinAsync([FromQuery] int code, [FromQuery] int slots = 4, [FromQuery] string? pass = null, [FromQuery] string? tag = null, [FromQuery] int buff = 1024, [FromQuery] int rate = 1024)
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
@@ -39,8 +39,9 @@ public class RoomController : ControllerBase
             slots = int.Max(2, int.Min(slots, 16));
             pass = pass?[32..];
             tag = tag?[128..];
-            buffering = int.Max(1024, int.Min(buffering, 16 * 1024 * 1024));
-            if (BufferingUsage + buffering * 2 > Buffering) return;
+            buff = int.Max(1024, int.Min(buff, 67108864));
+            rate = int.Max(1024, int.Min(rate, 67108864));
+            if (BufferingUsage + buff * 2 > Buffering) return;
             //
             var room = Rooms.FirstOrDefault(x => x.Code == code);
             if (room == null)
@@ -55,8 +56,8 @@ public class RoomController : ControllerBase
             if (room.Count < room.Slots && room.Pass == pass)
             {
                 var wsocket = await HttpContext.WebSockets.AcceptWebSocketAsync(WebRoomSocket.SubProtocol);
-                var rsocket = new WebRoomSocket(wsocket, buffering);
-                await room.JoinAsync(rsocket, pass);
+                var rsocket = new WebRoomSocket(wsocket, buff);
+                await room.JoinAsync(rsocket, pass, rate);
             }
         }
     }
