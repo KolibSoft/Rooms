@@ -11,15 +11,15 @@ namespace KolibSoft.Rooms.Console;
 public class Serice : RoomService
 {
 
-    protected override void OnConnect(IRoomSocket socket)
+    protected override void OnOnline(IRoomSocket socket)
     {
-        base.OnConnect(socket);
+        base.OnOnline(socket);
         System.Console.WriteLine("Service is online");
     }
 
-    protected override void OnDisconnect(IRoomSocket socket)
+    protected override void OnOffline(IRoomSocket socket)
     {
-        base.OnConnect(socket);
+        base.OnOnline(socket);
         System.Console.WriteLine("Service is offline");
     }
 

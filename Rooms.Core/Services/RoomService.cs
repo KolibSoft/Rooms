@@ -46,12 +46,6 @@ namespace KolibSoft.Rooms.Core.Services
         public TextWriter? Logger { get; set; }
 
         /// <summary>
-        /// Called after open a connection.
-        /// </summary>
-        /// <param name="socket"></param>
-        protected virtual void OnConnect(IRoomSocket socket) { }
-
-        /// <summary>
         /// Connect to a Room server using the specific implementation.
         /// </summary>
         /// <param name="connstring">Implementation specific connection string.</param>
@@ -69,7 +63,6 @@ namespace KolibSoft.Rooms.Core.Services
                 if (connector != null)
                 {
                     Socket = await connector.Invoke(connstring);
-                    OnConnect(Socket);
                     _ = ListenAsync(Socket, rating);
                 }
             }
@@ -78,12 +71,6 @@ namespace KolibSoft.Rooms.Core.Services
                 if (Logger != null) await Logger.WriteLineAsync($"Room Service error: {error}");
             }
         }
-
-        /// <summary>
-        /// Called after close a connection.
-        /// </summary>
-        /// <param name="socket"></param>
-        protected virtual void OnDisconnect(IRoomSocket socket) { }
 
         /// <summary>
         /// Disconnects from the server.
@@ -95,11 +82,7 @@ namespace KolibSoft.Rooms.Core.Services
             if (disposed) throw new ObjectDisposedException(null);
             try
             {
-                if (Socket != null)
-                {
-                    Socket.Dispose();
-                    OnDisconnect(Socket);
-                }
+                Socket?.Dispose();
             }
             catch (Exception error)
             {
@@ -108,10 +91,22 @@ namespace KolibSoft.Rooms.Core.Services
         }
 
         /// <summary>
+        /// Called after open a connection.
+        /// </summary>
+        /// <param name="socket"></param>
+        protected virtual void OnOnline(IRoomSocket socket) { }
+
+        /// <summary>
         /// Called after receive a message.
         /// </summary>
         /// <param name="message"></param>
         protected virtual void OnMessageReceived(RoomMessage message) { }
+
+        /// <summary>
+        /// Called after close a connection.
+        /// </summary>
+        /// <param name="socket"></param>
+        protected virtual void OnOffline(IRoomSocket socket) { }
 
         /// <summary>
         /// Start listen the socket incoming messages.
@@ -122,6 +117,7 @@ namespace KolibSoft.Rooms.Core.Services
         /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
         private async Task ListenAsync(IRoomSocket socket, int rating = 1024)
         {
+            OnOnline(socket);
             if (disposed) throw new ObjectDisposedException(null);
             var message = new RoomMessage();
             var ttl = TimeSpan.FromSeconds(1);
@@ -151,7 +147,7 @@ namespace KolibSoft.Rooms.Core.Services
                     if (Logger != null) await Logger.WriteLineAsync($"Room Service error: {error}");
                 }
             }
-            OnDisconnect(socket);
+            OnOffline(socket);
         }
 
         /// <summary>

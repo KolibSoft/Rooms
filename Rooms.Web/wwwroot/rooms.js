@@ -322,7 +322,7 @@ class WebRoomSocket {
 
     dispose() {
         if (!this.#disposed) {
-            this.#socket.terminate();
+            this.#socket.close();
             this.#disposed = true;
         }
     }
@@ -355,7 +355,6 @@ class RoomService {
         return this.#socket && this.#socket.IsAlive;
     }
 
-    onConnect(socket) { }
     async connectAsync(connstring, impl, rating = 1024) {
         if (this.#disposed) throw new Error('Service has been disposed');
         try {
@@ -363,29 +362,28 @@ class RoomService {
             let connector = this.connectors[impl];
             if (connector) {
                 this.#socket = await connector(connstring);
-                this.onConnect(this.#socket);
-                this.listenAsync(this.#socket, rating);
+                this.#listenAsync(this.#socket, rating);
             }
         } catch (error) {
             if (this.logger) this.logger(`Room Service error: ${error}`);
         }
     }
 
-    onDisconnect(socket) { }
     async disconnectAsync() {
         if (this.#disposed) throw new Error('Service has been disposed');
         try {
-            if (this.#socket) {
-                this.#socket.dispose();
-                this.onDisconnect(this.#socket);
-            }
+            this.#socket?.dispose();
         } catch (error) {
             if (this.logger) this.logger(`Room Service error: ${error}`);
         }
     }
 
+    onOnline(socket) { }
     onMessageReceived(message) { }
-    async listenAsync(socket, rating = 1024) {
+    onOffline(socket) { }
+    async #listenAsync(socket, rating = 1024) {
+        if (this.#disposed) throw new Error('Service has been disposed');
+        this.onOnline(this.#socket);
         let message = new RoomMessage();
         let ttl = 1000;
         let rate = 0;
@@ -407,7 +405,7 @@ class RoomService {
                 if (this.logger) this.logger(`Room Service error: ${error}`);
             }
         }
-        this.onDisconnect(socket);
+        this.onOffline(socket);
     }
 
     onMessageSent(message) { }

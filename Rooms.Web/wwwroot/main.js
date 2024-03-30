@@ -1,7 +1,8 @@
-import { RoomService, WebRoomSocket } from "./rooms.js";
+import { RoomMessage, RoomService, WebRoomSocket } from "./rooms.js";
 
 const isSecure = location.protocol.startsWith("https");
 const service = new RoomService();
+service.logger = message => console.log(message);
 
 let server = `${location.protocol}//${location.hostname}:${location.port}/api/room`;
 let code = (100000000 * Math.random()).toFixed().toString().padStart(8, "0");
@@ -10,6 +11,9 @@ let pass = "";
 let tag = "";
 let buff = 1024;
 let rate = 1024;
+
+let commands = [];
+let commandIndex = 0;
 
 const iServer = document.getElementById("iServer");
 iServer.value = server;
@@ -41,16 +45,39 @@ iRate.oninput = function () { rate = this.value; };
 
 const tLog = document.getElementById("tLog");
 const iCommand = document.getElementById("iCommand");
-iCommand.onkeyup = function (event) {
+iCommand.disabled = true;
+iCommand.onkeyup = async function (event) {
     if (event.key === "Enter") {
-        tLog.value += `${this.value}\n`;
+        iCommand.disabled = true;
+        let message = RoomMessage.tryParse(this.value);
+        if (message) await service.sendAsync(message);
+        else tLog.value += "< Invalid message format\n";
+        commands.push(this.value);
+        if (commands.length > 16) commands.shift();
+        commandIndex = commands.length;
         this.value = "";
-        tLog.scrollTop = tLog.scrollHeight;
+        iCommand.disabled = false;
+        iCommand.focus()
+    }
+    else if (event.key == "ArrowDown") {
+        if (commandIndex < commands.length - 1) {
+            commandIndex++;
+            iCommand.value = commands[commandIndex];
+        }
+    }
+    else if (event.key == "ArrowUp") {
+        if (commandIndex > 0) {
+            commandIndex--;
+            iCommand.value = commands[commandIndex];
+        }
+    } else if (!["ArrowLeft", "ArrowRight"].includes(event.key)) {
+        commandIndex = commands.length;
     }
 };
 
 const iJoin = document.getElementById("iJoin");
 iJoin.onclick = async function () {
+    await service.disconnectAsync();
     let url = new URL(server);
     url.protocol = isSecure ? "wss" : "ws";
     url.pathname += "/join";
@@ -61,9 +88,28 @@ iJoin.onclick = async function () {
     url.searchParams.set("buff", buff);
     url.searchParams.set("rate", rate);
     let connstring = url.toString();
-    service.onConnect = function (socket) { tLog.value = "Service online"; };
-    service.onDisconnect = function (socket) { tLog.value = "Service offline"; };
-    service.onMessageReceived = function (message) { tLog.value += `${message.verb} [${message.channel}] ${message.content}\n`; };
-    service.onMessageSent = function (message) { };
+    service.onOnline = function (socket) {
+        if (socket == this.socket) {
+            tLog.value = "< Service online\n";
+            commands = [];
+            tLog.scrollTop = tLog.scrollHeight;
+            iCommand.disabled = false;
+        }
+    };
+    service.onOffline = function (socket) {
+        if (socket == this.socket) {
+            tLog.value += "< Service offline\n";
+            tLog.scrollTop = tLog.scrollHeight;
+            iCommand.disabled = true;
+        }
+    };
+    service.onMessageReceived = function (message) {
+        tLog.value += `${message.verb} [${message.channel}] ${message.content}\n`;
+        tLog.scrollTop = tLog.scrollHeight;
+    };
+    service.onMessageSent = function (message) {
+        tLog.value += `${message.verb} [${message.channel}] ${message.content}\n`;
+        tLog.scrollTop = tLog.scrollHeight;
+    };
     await service.connectAsync(connstring, RoomService.WEB, parseInt(rate))
 };
