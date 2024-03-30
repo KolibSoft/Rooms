@@ -299,8 +299,9 @@ class WebRoomSocket {
         if (this.#disposed) throw new Error('Socket has been disposed');
         await new Promise(async (resolve, reject) => {
             message.copyTo(this.#sendBuffer);
-            this.#socket.onerror = event => reject();
-            this.#socket.onclose = event => reject();
+            this.#socket.addEventListener("error", reject);
+            this.#socket.addEventListener("close", reject);
+            if (this.#socket.readyState != WebSocket.OPEN) reject();
             this.#socket.send(this.#sendBuffer.slice(0, message.length), { binary: true });
             resolve();
         });
@@ -310,13 +311,14 @@ class WebRoomSocket {
     async receiveAsync(message) {
         if (this.#disposed) throw new Error('Socket has been disposed');
         await new Promise((resolve, reject) => {
-            this.#socket.onmessage = event => {
+            this.#socket.addEventListener("message", event => {
                 this.#receiveBuffer = new Uint8Array(event.data);
                 message.copyFrom(this.#receiveBuffer);
                 resolve();
-            };
-            this.#socket.onerror = event => reject();
-            this.#socket.onclose = event => reject();
+            });
+            this.#socket.addEventListener("error", reject);
+            this.#socket.addEventListener("close", reject);
+            if (this.#socket.readyState != WebSocket.OPEN) reject();
         });
     }
 
