@@ -13,7 +13,7 @@ namespace KolibSoft.Rooms.Core.Services
 {
 
     /// <summary>
-    /// Representas a central point to relay socket messages.
+    /// Represents a central point to relay socket messages.
     /// </summary>
     public class RoomHub : IDisposable
     {
