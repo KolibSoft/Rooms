@@ -19,14 +19,24 @@ namespace KolibSoft.Rooms.Core.Protocol
         /// <summary>
         /// Internal data.
         /// </summary>
-        public ReadOnlyMemory<byte> Data => data;
+        public ReadOnlySpan<byte> Data => data;
 
         /// <summary>
         /// Length in bytes.
         /// </summary>
         public int Length => data.Count;
 
-        public override string ToString() => Encoding.UTF8.GetString(data);
+        public override string ToString()
+        {
+            try
+            {
+                return Encoding.UTF8.GetString(data);
+            }
+            catch
+            {
+                return $"[{Length} bytes]";
+            }
+        }
 
         public override int GetHashCode() => data.GetHashCode();
 
@@ -34,17 +44,6 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             var result = (obj is RoomContent content) && this == content;
             return result;
-        }
-
-        /// <summary>
-        /// Copies the content into another buffer.
-        /// </summary>
-        /// <param name="target">Buffer to write.</param>
-        /// <exception cref="ArgumentException">If target is too short.</exception>
-        public void CopyTo(Span<byte> target)
-        {
-            if (target.Length < data.Count) throw new ArgumentException("Target is too short");
-            data.AsSpan().CopyTo(target);
         }
 
         /// <summary>

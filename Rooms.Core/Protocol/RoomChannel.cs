@@ -20,7 +20,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         /// <summary>
         /// Internal data.
         /// </summary>
-        public ReadOnlyMemory<byte> Data => data;
+        public ReadOnlySpan<byte> Data => data;
 
         /// <summary>
         /// Length in bytes.
@@ -38,15 +38,10 @@ namespace KolibSoft.Rooms.Core.Protocol
         }
 
         /// <summary>
-        /// Copies the content into another buffer.
+        /// Verify if the current data is a valid channel data.
         /// </summary>
-        /// <param name="target">Buffer to write.</param>
-        /// <exception cref="ArgumentException">If target is too short.</exception>
-        public void CopyTo(Span<byte> target)
-        {
-            if (target.Length < data.Count) throw new ArgumentException("Target is too short");
-            data.AsSpan().CopyTo(target);
-        }
+        /// <returns></returns>
+        public bool Validate() => Verify(data);
 
         /// <summary>
         /// Constructs a new channel without validate its data.
