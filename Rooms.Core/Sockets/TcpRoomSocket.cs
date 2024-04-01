@@ -46,6 +46,8 @@ namespace KolibSoft.Rooms.Core.Sockets
         public async Task SendAsync(RoomMessage message)
         {
             if (disposed) throw new ObjectDisposedException(null);
+            if (!message.Validate())
+                throw new FormatException($"Invalid message format: {message}");
             message.CopyTo(SendBuffer);
             var stream = Client.GetStream();
             await stream.WriteAsync(SendBuffer[0..message.Length]);
@@ -63,6 +65,8 @@ namespace KolibSoft.Rooms.Core.Sockets
             var stream = Client.GetStream();
             var result = await stream.ReadAsync(ReceiveBuffer);
             message.CopyFrom(ReceiveBuffer[0..result]);
+            if (!message.Validate())
+                throw new FormatException($"Invalid message format: {message}");
         }
 
         /// <summary>

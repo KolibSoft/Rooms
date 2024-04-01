@@ -35,6 +35,12 @@ namespace KolibSoft.Rooms.Core.Protocol
         public override string ToString() => $"{Verb} {Channel} {Content}";
 
         /// <summary>
+        /// Verify if the current data is a valid message data.
+        /// </summary>
+        /// <returns></returns>
+        public bool Validate() => Verb.Validate() && Channel.Validate();
+
+        /// <summary>
         /// Copies the content into another buffer.
         /// </summary>
         /// <param name="target">Buffer to write.</param>
@@ -43,16 +49,16 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (target.Length < Length) throw new ArgumentException("Target is too short");
             var offset = 0;
-            Verb.CopyTo(target[offset..]);
+            Verb.Data.CopyTo(target[offset..]);
             offset += Verb.Length;
             target[offset] = (byte)' ';
             offset += 1;
-            Channel.CopyTo(target[offset..]);
+            Channel.Data.CopyTo(target[offset..]);
             offset += Channel.Length;
             if (Content.Length > 0)
             {
                 target[offset] = (byte)' ';
-                Content.CopyTo(target[(offset + 1)..]);
+                Content.Data.CopyTo(target[(offset + 1)..]);
             }
         }
 
