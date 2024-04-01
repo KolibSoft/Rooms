@@ -34,6 +34,16 @@ input {
     box-sizing: border-box;
 }
 
+#dList span {
+    background: silver;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.5em;
+    padding: 0.25em 0.5em;
+    border-radius: 0.25em;
+}
+
 #iCode {
     width: 8ch;
 }

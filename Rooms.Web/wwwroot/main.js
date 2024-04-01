@@ -4,6 +4,9 @@ const isSecure = location.protocol.startsWith("https");
 const service = new RoomService();
 service.logger = message => console.log(message);
 
+let rooms = [];
+let hint = "";
+
 let server = `${location.protocol}//${location.hostname}:${location.port}/api/room`;
 let code = (100000000 * Math.random()).toFixed().toString().padStart(8, "0");
 let slots = 4;
@@ -14,6 +17,34 @@ let rate = 1024;
 
 let commands = [];
 let commandIndex = 0;
+
+const dList = document.getElementById("dList");
+
+const iRefresh = document.getElementById("iRefresh");
+iRefresh.onclick = async function () {
+    iRefresh.disabled = true;
+    try {
+        let url = new URL(server);
+        url.searchParams.set("hint", hint);
+        let enpoint = url.toString();
+        let response = await fetch(enpoint);
+        rooms = await response.json();
+        dList.innerHTML = "";
+        for (let room of rooms) {
+            let span = document.createElement("span");
+            span.innerHTML = `${room.code} ${room.count}/${room.slots} (${room.pass ? "RPIVATE" : "PUBLIC"}) [${room.tag ?? ""}]`;
+            dList.append(span);
+        }
+    } catch { }
+    iRefresh.disabled = false;
+};
+
+const iHint = document.getElementById("iHint");
+iHint.value = hint;
+iHint.oninput = function () {
+    hint = this.value;
+    iRefresh.click();
+}
 
 const iServer = document.getElementById("iServer");
 iServer.value = server;
@@ -94,6 +125,7 @@ iJoin.onclick = async function () {
             commands = [];
             tLog.scrollTop = tLog.scrollHeight;
             iCommand.disabled = false;
+            iRefresh.click();
         }
     };
     service.onOffline = function (socket) {
@@ -101,6 +133,7 @@ iJoin.onclick = async function () {
             tLog.value += "< Service offline\n";
             tLog.scrollTop = tLog.scrollHeight;
             iCommand.disabled = true;
+            iRefresh.click();
         }
     };
     service.onMessageReceived = function (message) {
@@ -113,3 +146,5 @@ iJoin.onclick = async function () {
     };
     await service.connectAsync(connstring, RoomService.WEB, parseInt(rate))
 };
+
+iRefresh.click();
