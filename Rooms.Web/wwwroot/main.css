@@ -6,76 +6,80 @@
 }
 
 html {
-    padding: 10px;
     background-color: gray;
 }
 
-h2 {
-    margin-top: 15px;
+body {
+    padding: 1em;
 }
 
-input,
-select,
-textarea {
-    margin: 10px 0px;
-    padding: 5px 10px;
-    border-radius: 5px;
+h2 {
+    margin-top: 1em;
+}
+
+label {
+    display: inline-block;
+    margin-top: 1em;
+}
+
+input {
+    display: inline-block;
+    margin-top: 0.5em;
+    padding: 0.25em 0.5em;
+    border-radius: 0.25em;
+}
+
+#iServer {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#dList span {
+    background: silver;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.5em;
+    padding: 0.25em 0.5em;
+    border-radius: 0.25em;
+}
+
+#iCode {
+    width: 8ch;
+}
+
+#iSlots {
+    width: 8ch;
+}
+
+#iBuff {
+    width: 12ch;
+}
+
+#iRate {
+    width: 8ch;
 }
 
 input[type="button"] {
-    background-color: lightgray;
     cursor: pointer;
+    background: silver;
 }
 
 input[type="button"]:active {
-    background-color: silver;
+    cursor: pointer;
+    background: darkgray;
 }
 
-#dRoomList {
-    max-height: 300px;
-    overflow-y: scroll;
-}
-
-#dRoomList>p {
-    display: block;
-    background-color: lightgray;
-    margin: 5px 0px;
-    padding: 5px 10px;
-    border-radius: 5px;
-}
-
-#tRoomEndpoint {
-    width: calc(100% - 20px);
-}
-
-#tRoomCode {
-    width: 8ch;
-}
-
-#dRoomLog {
-    display: block;
-    background-color: lightgray;
-    margin: 10px 0px;
+textarea {
+    width: 100%;
+    height: 10lh;
+    box-sizing: border-box;
     padding: 1ch;
-    border-radius: 5px;
-    height: 25ch;
-    overflow-wrap: break-word;
-    overflow-y: scroll;
 }
 
-#tRoomVerb {
-    width: 3ch;
-}
-
-#tRoomChannel {
-    width: 8ch;
-}
-
-#tRoomContent {
-    display: block;
-    margin-top: 0;
-    width: calc(100% - 20px);
-    min-height: 2ch;
-    height: 2ch;
-    resize: vertical;
+#iCommand {
+    padding: 1ch;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
 }

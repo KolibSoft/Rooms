@@ -17,18 +17,20 @@ A **Room** is a connection point where participants can send and receive message
 ```txt
 // Format:
 <ROOM-VERB> <ROOM-CHANNEL>
-<ROOM-CONTENT>
+[ROOM-CONTENT]
 
 // Example:
 MSG 12345678
-UTF8 Text Content
+UTF8 Text or Binary data
 ```
 
-- **Room Verb** is a sequence of 3 uppercase or lowercase letters of the ASCII code. The **Room Verb** does not have any special meaning for the server that relays the messages, it is the sockets that receive the message that are in charge of interpreting it and how to act in response.
+- **Room Verb** is a variable length sequence of uppercase or lowercase letters of the ASCII code. The **Room Verb** does not have any special meaning for the server that relays the messages, it is the sockets that receive the message that are in charge of interpreting it and how to act in response.
 
 - **Room Channel** is an 8-digit hexadecimal number that represents a 32-bit unsigned integer. The **Room Channel** represents the specific connection point of two sockets, it is the server that is responsible for providing the same channel identifier for both parties, this is achieved by performing an XOR operation between the socket identifiers.
 
-- **Room Content** is a variable length UTF8 text.
+- **Room Content** is a optional variable length UTF8 text or binary data.
+
+**Note**: Rooms is designed to send small amounts of data (like a JSON document) so the entire message must be able to be sent in a single send (fragmentation is not directly supported yet).
 
 ## Room Hub Routing ##
 
@@ -46,33 +48,51 @@ In case you want to refer to a specific channel within the body of a message, a 
 
 Command line options:
 
+- `--mode` `[Client, Server, Service]` Allows you to choose between the available modes.
 - `--impl` `[TCP, WEB]` Allows you to choose between TCP implementation and Web Sockets implementation.
-- `--mode` `[Client, Server]` Allows you to choose between Client mode and Server mode.
-- `--host` Allows you to specify the remote host to which you want to connect with the TCP client.
-- `--port` Specifies the remote port to connect to when using a TCP client or the local listening port of the TCP server.
-- `--uri` Allows you to specify the URL to which the Web Socket client connects.
-- `--prefix` Allows you to specify the HTTP server listening prefix.
-
-Example of run a TCP Room Client:
-
-```powershell
-.\Rooms.Console.exe --impl=TCP --mode=Client --host=localhost --port=55000
-```
+- `--endpoint` `[127.0.0.1:55000]` Allows you to specify the IP endpoint to which you want to connect with the TCP client (by default targets localhost).
+- `--uri` `[http://localhost:55000/]` Allows you to specify the URL to which you want to connect with the Web Socket client (by default targets localhost).
+- `--buff` `[1024]` Allows you to specify the maximum message length to buffer on send and receive (by default is 1024).
+- `--rate` `[1024]` Allows you to specify the maximum amount of bytes to receive per second (by default is 1024).
+- `--server` `[127.0.0.1:55000|http://localhost:55000/]` Allows you to specify the service connection string (by default targets localhost).
 
 Example of run a TCP Room Server:
 
 ```powershell
-.\Rooms.Console.exe --impl=TCP --mode=Server --port=55000
+.\Rooms.Console.exe --mode=Server --impl=TCP --endpoint=127.0.0.1:55000 --buff=1024 --rate=1024
 ```
 
-Example of run a Web Room Client:
+Example of run a TCP Room Client:
 
 ```powershell
-.\Rooms.Console.exe --impl=WEB --mode=Client --uri=ws://localhost:55000/
+.\Rooms.Console.exe --mode=Client --impl=TCP --endpoint=127.0.0.1:55000 --buff=1024 --rate=1024
 ```
 
-Example of run a Web Room Server:
+Example of run a TCP Room Service:
 
 ```powershell
-.\Rooms.Console.exe --impl=WEB --mode=Server --prefix=http://localhost:55000/
+.\Rooms.Console.exe --mode=Service --impl=TCP --server=127.0.0.1:55000 --buff=1024 --rate=1024
 ```
+
+Example of run a WEB Room Server:
+
+```powershell
+.\Rooms.Console.exe --mode=Server --impl=WEB --uri=http://localhost:55000/ --buff=1024 --rate=1024
+```
+
+Example of run a WEB Room Client:
+
+```powershell
+.\Rooms.Console.exe --mode=Client --impl=WEB --uri=ws://localhost:55000/ --buff=1024 --rate=1024
+```
+
+Example of run a WEB Room Service:
+
+```powershell
+.\Rooms.Console.exe --mode=Service --impl=WEB --server=ws://localhost:55000/ --buff=1024 --rate=1024
+```
+
+**Notes**: 
+
+- Clients will be disconnected if the amount o bytes received per second exceeds the rate value.
+- Services only listen incoming messages, they are used to monitoring broadcast data.
