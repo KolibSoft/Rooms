@@ -1,24 +1,26 @@
-namespace KolibSoft.Rooms.Core
+using KolibSoft.Rooms.Core.Protocol;
+
+namespace KolibSoft.Rooms.Core.Sockets
 {
 
     /// <summary>
     /// Binds a socket with a message.
     /// </summary>
-    public class RoomContext
+    public readonly struct RoomContext
     {
 
         /// <summary>
-        /// Room socket.
+        /// Binded socket.
         /// </summary>
         public IRoomSocket Socket { get; }
 
         /// <summary>
-        /// Room message.
+        /// Binded message.
         /// </summary>
         public RoomMessage Message { get; }
 
         /// <summary>
-        /// Constructs a new Room Context.
+        /// Constructs a new context.
         /// </summary>
         /// <param name="socket">Socket to bind.</param>
         /// <param name="message">Message to bind.</param>
@@ -29,4 +31,5 @@ namespace KolibSoft.Rooms.Core
         }
 
     }
+
 }

@@ -6,42 +6,42 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>Rooms</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel="stylesheet" href="main.css">
-    <script type="module" src="main.js"></script>
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <script src='main.js' type="module"></script>
 </head>
 
 <body>
 
     <h1>Rooms</h1>
-    <input id="tRoomEndpoint" placeholder="Room Endpoint" />
 
-    <h2>Room List</h2>
-    <input id="tRoomHint" type="text" placeholder="Room Hint" maxlength="32" />
-    <input id="bRefresh" type="button" value="Refresh" />
-    <div id="dRoomList"></div>
+    <div>
+        <h2>Room Server</h2>
+        <input id="iServer" placeholder="Server" />
+    </div>
 
-    <hr />
+    <div>
+        <h2>Room List</h2>
+        <input id="iHint" placeholder="Hint" maxlength="128" />
+        <input id="iRefresh" type="button" value="Refresh" />
+        <div id="dList"></div>
+    </div>
 
-    <h2>Join Room</h2>
-    <input id="tRoomCode" type="text" placeholder="Room Code" minlength="8" maxlength="8" />
-    <input id="tRoomSlots" type="number" placeholder="Room Slots" min="2" max="8" value="4" />
-    <input id="tRoomPass" type="text" placeholder="Room Pass" minlength="0" maxlength="32" />
-    <input id="tRoomTag" type="text" placeholder="Room Tag" minlength="0" maxlength="128" />
-    <input id="tRoomBuffering" type="text" placeholder="Room Buffering" minlength="0" value="1024"/>
-    <input id="bJoin" type="button" value="Join" />
+    <div>
+        <h2>Join Room</h2>
+        <input id="iCode" placeholder="Code" maxlength="8" />
+        <input id="iSlots" placeholder="Slots" type="number" min="1" max="16" />
+        <input id="iPass" placeholder="Pass" maxlength="32" />
+        <input id="iTag" placeholder="Tag" maxlength="128" />
+        <input id="iBuff" placeholder="Buffering" type="number" min="1024" max="67108864" />
+        <input id="iRate" placeholder="Rating" type="number" min="1024" max="67108864" />
+        <input id="iJoin" type="button" value="Join" />
+    </div>
 
-    <hr />
-
-    <h2>Room Log</h2>
-    <div id="dRoomLog"></div>
-    <input id="tRoomVerb" type="text" placeholder="Room Verb" minlength="3" maxlength="3" title="Room Verb" />
-    <input id="tRoomChannel" type="text" placeholder="Room Channel" minlength="8" maxlength="8" title="Room Channel" />
-    <textarea id="tRoomContent" type="text" placeholder="Room Content" minlength="0" maxlength="1024"
-        title="Room Content"></textarea>
-    <select id="sRoomVerb"></select>
-    <select id="sRoomChannel"></select>
-    <select id="sRoomContent"></select>
-    <input id="bSend" type="button" value="Send" />
+    <div>
+        <h2>Room Service</h2>
+        <textarea id="tLog" readonly></textarea>
+        <input id="iCommand" placeholder="&lt;VERB&gt; &lt;CHANNEL&gt; [CONTENT]" />
+    </div>
 
 </body>
 

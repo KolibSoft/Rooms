@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rooms.Web", "Rooms.Web\Room
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rooms.Console", "Rooms.Console\Rooms.Console.csproj", "{C2E5AF4B-A3EB-49DE-936A-4EB4FBE5A5C3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rooms.Tests", "Rooms.Tests\Rooms.Tests.csproj", "{D8FA7577-5ADC-4AD9-81E0-96EF9483C2DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{C2E5AF4B-A3EB-49DE-936A-4EB4FBE5A5C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2E5AF4B-A3EB-49DE-936A-4EB4FBE5A5C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2E5AF4B-A3EB-49DE-936A-4EB4FBE5A5C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8FA7577-5ADC-4AD9-81E0-96EF9483C2DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8FA7577-5ADC-4AD9-81E0-96EF9483C2DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8FA7577-5ADC-4AD9-81E0-96EF9483C2DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8FA7577-5ADC-4AD9-81E0-96EF9483C2DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using KolibSoft.Rooms.Core;
+using KolibSoft.Rooms.Core.Services;
+using KolibSoft.Rooms.Core.Sockets;
 
 namespace KolibSoft.Rooms.Web;
 
@@ -15,11 +17,11 @@ public class Room
     public int Count => Hub.Sockets.Length;
     public bool IsAlive { get; private set; } = false;
 
-    public async Task JoinAsync(IRoomSocket socket, string? pass)
+    public async Task JoinAsync(IRoomSocket socket, string? pass = null, int rating = 1024)
     {
         if (Count >= Slots || Pass != pass)
             throw new InvalidOperationException();
-        await Hub.ListenAsync(socket, 1024 * 1024);
+        await Hub.ListenAsync(socket, rating);
     }
 
     public async void RunAsync(TimeSpan ttl)
@@ -48,7 +50,7 @@ public class Room
         Slots = slots;
         Pass = pass;
         Tag = tag;
-        Hub.LogWriter = Console.Out;
+        Hub.Logger = Console.Out;
     }
 
 }
