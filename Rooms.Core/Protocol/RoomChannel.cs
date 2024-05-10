@@ -18,7 +18,8 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static int Scan(ReadOnlySpan<byte> data, int index = 0)
         {
-            if (index < data.Length && CheckSign(data[index])) index++;
+            if (index < data.Length && CheckSign(data[index]))
+                index++;
             while (index < data.Length && CheckHexadecimal(data[index]))
                 index++;
             return index;
@@ -28,7 +29,8 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static int Scan(ReadOnlySpan<char> data, int index = 0)
         {
-            if (index < data.Length && CheckSign(data[index])) index++;
+            if (index < data.Length && CheckSign(data[index]))
+                index++;
             while (index < data.Length && CheckHexadecimal(data[index]))
                 index++;
             return index;
@@ -39,37 +41,37 @@ namespace KolibSoft.Rooms.Core.Protocol
         public static bool Verify(ReadOnlySpan<byte> data) => Scan(data) == data.Length;
         public static bool Verify(ReadOnlySpan<char> data) => Scan(data) == data.Length;
 
-        public static bool TryParse(ReadOnlySpan<byte> data, out RoomChannel verb)
+        public static bool TryParse(ReadOnlySpan<byte> data, out RoomChannel channel)
         {
             if (Verify(data))
             {
-                verb = new RoomChannel(data.ToArray());
+                channel = new RoomChannel(data.ToArray());
                 return true;
             }
-            verb = default;
+            channel = default;
             return false;
         }
 
-        public static bool TryParse(ReadOnlySpan<char> data, out RoomChannel verb)
+        public static bool TryParse(ReadOnlySpan<char> data, out RoomChannel channel)
         {
             if (Verify(data))
             {
-                verb = new RoomChannel(Encoding.UTF8.GetBytes(new string(data)));
+                channel = new RoomChannel(Encoding.UTF8.GetBytes(new string(data)));
                 return true;
             }
-            verb = default;
+            channel = default;
             return false;
         }
 
         public static RoomChannel Parse(ReadOnlySpan<byte> data)
         {
-            if (TryParse(data, out RoomChannel verb)) return verb;
+            if (TryParse(data, out RoomChannel channel)) return channel;
             throw new FormatException($"Room channel format is incorrect: {Encoding.UTF8.GetString(data)}");
         }
 
         public static RoomChannel Parse(ReadOnlySpan<char> data)
         {
-            if (TryParse(data, out RoomChannel verb)) return verb;
+            if (TryParse(data, out RoomChannel channel)) return channel;
             throw new FormatException($"Room channel format is incorrect: {new string(data)}");
         }
 
