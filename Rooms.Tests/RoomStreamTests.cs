@@ -12,8 +12,8 @@ namespace KolibSoft.Rooms.Tests
             var message = new RoomMessage();
             using (var stream = new FileRoomStream("stream.txt", FileMode.Create))
             {
-                message.Verb = RoomVerb.Parse("VERB");
-                message.Channel = RoomChannel.Parse("0000");
+                message.Verb = RoomVerb.Parse("VERB ");
+                message.Channel = RoomChannel.Parse("0000 ");
                 message.Content = RoomContent.Create(Encoding.UTF8.GetBytes("CONTENT"));
                 await stream.WriteMessageAsync(message);
             }

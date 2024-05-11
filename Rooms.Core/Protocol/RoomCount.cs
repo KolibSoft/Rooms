@@ -35,8 +35,17 @@ namespace KolibSoft.Rooms.Core.Protocol
             static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
-        public static bool Verify(ReadOnlySpan<byte> data) => Scan(data) == data.Length;
-        public static bool Verify(ReadOnlySpan<char> data) => Scan(data) == data.Length;
+        public static bool Verify(ReadOnlySpan<byte> data)
+        {
+            return Scan(data) == data.Length && CheckBlank(data[^1]);
+            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+        }
+
+        public static bool Verify(ReadOnlySpan<char> data)
+        {
+            return Scan(data) == data.Length && CheckBlank(data[^1]);
+            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+        }
 
         public static bool TryParse(ReadOnlySpan<byte> data, out RoomCount count)
         {
@@ -74,16 +83,18 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static explicit operator RoomCount(int number)
         {
-            var text = number.ToString();
+            var text = $"{number}\n";
             var count = new RoomCount(Encoding.UTF8.GetBytes(text));
             return count;
         }
 
         public static explicit operator int(RoomCount count)
         {
+            if (count.Length == 0) return 0;
             var text = Encoding.UTF8.GetString(count.Data);
-            var number = int.Parse(text, NumberStyles.Integer);
-            return number;
+            if (int.TryParse(text, NumberStyles.Integer, null, out int number))
+                return number;
+            return 0;
         }
 
     }

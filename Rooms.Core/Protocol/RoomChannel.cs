@@ -42,8 +42,17 @@ namespace KolibSoft.Rooms.Core.Protocol
             static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
-        public static bool Verify(ReadOnlySpan<byte> data) => Scan(data) == data.Length;
-        public static bool Verify(ReadOnlySpan<char> data) => Scan(data) == data.Length;
+        public static bool Verify(ReadOnlySpan<byte> data)
+        {
+            return Scan(data) == data.Length && CheckBlank(data[^1]);
+            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+        }
+
+        public static bool Verify(ReadOnlySpan<char> data)
+        {
+            return Scan(data) == data.Length && CheckBlank(data[^1]);
+            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+        }
 
         public static bool TryParse(ReadOnlySpan<byte> data, out RoomChannel channel)
         {
@@ -81,7 +90,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static explicit operator RoomChannel(int number)
         {
-            var text = number.ToString("x");
+            var text = $"{number:x} ";
             var channel = new RoomChannel(Encoding.UTF8.GetBytes(text));
             return channel;
         }
@@ -89,12 +98,10 @@ namespace KolibSoft.Rooms.Core.Protocol
         public static explicit operator int(RoomChannel channel)
         {
             if (channel.Length == 0) return 0;
-            if (channel.Length == 1)
-                if (channel.Data[0] == '+') return 0;
-                else if (channel.Data[0] == '-') return -1;
             var text = Encoding.UTF8.GetString(channel.Data);
-            var number = int.Parse(text, NumberStyles.HexNumber);
-            return number;
+            if (int.TryParse(text, NumberStyles.HexNumber, null, out int number))
+                return number;
+            return 0;
         }
 
     }

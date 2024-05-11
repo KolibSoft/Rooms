@@ -34,8 +34,17 @@ namespace KolibSoft.Rooms.Core.Protocol
             static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
-        public static bool Verify(ReadOnlySpan<byte> data) => Scan(data) == data.Length;
-        public static bool Verify(ReadOnlySpan<char> data) => Scan(data) == data.Length;
+        public static bool Verify(ReadOnlySpan<byte> data)
+        {
+            return Scan(data) == data.Length && CheckBlank(data[^1]);
+            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+        }
+
+        public static bool Verify(ReadOnlySpan<char> data)
+        {
+            return Scan(data) == data.Length && CheckBlank(data[^1]);
+            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+        }
 
         public static bool TryParse(ReadOnlySpan<byte> data, out RoomVerb verb)
         {
