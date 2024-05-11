@@ -4,16 +4,12 @@ using System.Text;
 namespace KolibSoft.Rooms.Core.Protocol
 {
 
-    public struct RoomVerb
+    public readonly struct RoomVerb
     {
 
-        public ReadOnlyMemory<byte> Data => _data;
-
-        public override string ToString() => $"{Encoding.UTF8.GetString(_data)}";
-
-        public RoomVerb(ArraySegment<byte> data) => _data = data;
-
-        private ArraySegment<byte> _data;
+        public readonly ArraySegment<byte> Data;
+        public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
+        public RoomVerb(ArraySegment<byte> data) => Data = data;
 
         public static int Scan(ReadOnlySpan<byte> data, int index = 0)
         {

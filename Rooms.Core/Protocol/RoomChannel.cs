@@ -5,16 +5,13 @@ using System.Text;
 namespace KolibSoft.Rooms.Core.Protocol
 {
 
-    public struct RoomChannel
+    public readonly struct RoomChannel
     {
 
-        public ReadOnlyMemory<byte> Data => _data;
+        public readonly ArraySegment<byte> Data;
+        public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
+        public RoomChannel(ArraySegment<byte> data) => Data = data;
 
-        public override string ToString() => $"{Encoding.UTF8.GetString(_data)}";
-
-        public RoomChannel(ArraySegment<byte> data) => _data = data;
-
-        private ArraySegment<byte> _data;
 
         public static int Scan(ReadOnlySpan<byte> data, int index = 0)
         {
@@ -84,11 +81,11 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static explicit operator long(RoomChannel channel)
         {
-            if (channel._data.Count == 0) return 0;
-            if (channel._data.Count == 1)
-                if (channel._data[0] == '+') return 0;
-                else if (channel._data[0] == '-') return -1;
-            var text = Encoding.UTF8.GetString(channel._data);
+            if (channel.Data.Count == 0) return 0;
+            if (channel.Data.Count == 1)
+                if (channel.Data[0] == '+') return 0;
+                else if (channel.Data[0] == '-') return -1;
+            var text = Encoding.UTF8.GetString(channel.Data);
             var number = long.Parse(text, NumberStyles.HexNumber);
             return number;
         }

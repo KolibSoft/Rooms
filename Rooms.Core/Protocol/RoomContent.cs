@@ -6,16 +6,13 @@ using System.Text;
 namespace KolibSoft.Rooms.Core.Protocol
 {
 
-    public struct RoomContent
+    public readonly struct RoomContent
     {
 
-        public ReadOnlyMemory<byte> Data => _data;
+        public readonly ArraySegment<byte> Data;
+        public override string ToString() => $"{Convert.ToBase64String(Data)}";
+        public RoomContent(ArraySegment<byte> data) => Data = data;
 
-        public override string ToString() => $"{Convert.ToBase64String(_data)}";
-
-        public RoomContent(ArraySegment<byte> data) => _data = data;
-
-        private ArraySegment<byte> _data;
 
         public static RoomContent Create(ReadOnlySpan<byte> data) => new RoomContent(data.ToArray());
         public static RoomContent Create(ReadOnlySpan<char> data) => new RoomContent(Convert.FromBase64String(new string(data)));
