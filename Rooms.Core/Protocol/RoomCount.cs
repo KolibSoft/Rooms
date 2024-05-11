@@ -8,11 +8,11 @@ namespace KolibSoft.Rooms.Core.Protocol
     public readonly struct RoomCount
     {
 
-        public readonly ArraySegment<byte> Data;
-        public int Length => Data.Count;
+        public readonly byte[] Data;
+        public int Length => Data?.Length ?? 0;
         public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
 
-        public RoomCount(ArraySegment<byte> data) => Data = data;
+        public RoomCount(byte[] data) => Data = data;
         public static int Scan(ReadOnlySpan<byte> data, int index = 0)
         {
             while (index < data.Length && CheckDigit(data[index]))

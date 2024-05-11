@@ -5,9 +5,9 @@ namespace KolibSoft.Rooms.Core.Protocol
 
     public class RoomMessage
     {
-        public RoomVerb Verb { get; set; }
-        public RoomChannel Channel { get; set; }
-        public RoomContent Content { get; set; }
+        public string Verb { get; set; } = string.Empty;
+        public int Channel { get; set; } = 0;
+        public byte[] Content { get; set; } = Array.Empty<byte>();
     }
 
 }

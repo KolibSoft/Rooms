@@ -90,7 +90,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             return new RoomContent(data);
         }
 
-        public async Task ReadMessageAsync(RoomMessage message, CancellationToken token = default)
+        public async Task ReadProtocolAsync(RoomProtocol protocol, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             var verb = await ReadVerbAsync(token);
@@ -101,10 +101,21 @@ namespace KolibSoft.Rooms.Core.Protocol
             if (count.Length == 0) throw new IOException("Room count not found");
             var length = (int)count;
             var content = await ReadContentAsync(length, token);
-            if (content.Length != length) throw new IOException("Room content not found");
-            message.Verb = verb;
-            message.Channel = channel;
-            message.Content = content;
+            if (content.Length != length) throw new IOException("Room content corrupt");
+            protocol.Verb = verb;
+            protocol.Channel = channel;
+            protocol.Count = count;
+            protocol.Content = content;
+        }
+
+        public async Task ReadMessageAsync(RoomMessage message, CancellationToken token = default)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
+            var protocol = new RoomProtocol();
+            await ReadProtocolAsync(protocol, token);
+            message.Verb = protocol.Verb.ToString().Trim();
+            message.Channel = (int)protocol.Channel;
+            message.Content = protocol.Content.Data;
         }
 
         protected abstract ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token);
@@ -114,7 +125,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < verb.Length)
             {
-                var length = await WriteAsync(verb.Data.Slice(index), token);
+                var length = await WriteAsync(verb.Data.AsMemory().Slice(index), token);
                 if (length < 1) throw new IOException("Room verb broken");
                 index += length;
             }
@@ -125,7 +136,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < channel.Length)
             {
-                var length = await WriteAsync(channel.Data.Slice(index), token);
+                var length = await WriteAsync(channel.Data.AsMemory().Slice(index), token);
                 if (length < 1) throw new IOException("Room channel broken");
                 index += length;
             }
@@ -136,7 +147,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < count.Length)
             {
-                var length = await WriteAsync(count.Data.Slice(index), token);
+                var length = await WriteAsync(count.Data.AsMemory().Slice(index), token);
                 if (length < 1) throw new IOException("Room count broken");
                 index += length;
             }
@@ -147,22 +158,37 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < content.Length)
             {
-                var length = await WriteAsync(content.Data.Slice(index), token);
+                var length = await WriteAsync(content.Data.AsMemory().Slice(index), token);
                 if (length < 1) throw new IOException("Room content broken");
                 index += length;
             }
         }
 
+        public async Task WriteProtocolAsync(RoomProtocol protocol, CancellationToken token = default)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
+            if (protocol.Verb.Length == 0) throw new IOException("Room verb not found");
+            await WriteVerbAsync(protocol.Verb, token);
+            if (protocol.Channel.Length == 0) throw new IOException("Room channel not found");
+            await WriteChannelAsync(protocol.Channel, token);
+            if (protocol.Count.Length == 0) throw new IOException("Room count not found");
+            await WriteCountAsync(protocol.Count, token);
+            var count = (int)protocol.Count;
+            if (protocol.Content.Length != count) throw new IOException("Room content corrupt");
+            await WriteContentAsync(protocol.Content, token);
+        }
+
         public async Task WriteMessageAsync(RoomMessage message, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            if (message.Verb.Length == 0) throw new IOException("Room verb not found");
-            if (message.Channel.Length == 0) throw new IOException("Room channel not found");
-            var count = (RoomCount)message.Content.Length;
-            await WriteVerbAsync(message.Verb, token);
-            await WriteChannelAsync(message.Channel, token);
-            await WriteCountAsync(count, token);
-            await WriteContentAsync(message.Content, token);
+            var protocol = new RoomProtocol
+            {
+                Verb = RoomVerb.Parse($"{message.Verb.Trim()} "),
+                Channel = (RoomChannel)message.Channel,
+                Count = (RoomCount)message.Content.Length,
+                Content = RoomContent.Create(message.Content)
+            };
+            await WriteProtocolAsync(protocol, token);
         }
 
         protected virtual ValueTask DisposeAsync(bool disposing)
