@@ -83,8 +83,9 @@ namespace KolibSoft.Rooms.Core.Protocol
                 var chunk = await GetChunkAsync(token);
                 if (_length < 1) throw new IOException("Room content broken");
                 var length = Math.Min(chunk.Length, count - index);
-                chunk.CopyTo(data.AsMemory().Slice(index, length));
+                chunk.Slice(0, length).CopyTo(data.AsMemory().Slice(index, length));
                 index += length;
+                _position += length;
             }
             return new RoomContent(data);
         }

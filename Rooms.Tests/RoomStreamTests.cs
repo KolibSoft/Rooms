@@ -55,7 +55,7 @@ namespace KolibSoft.Rooms.Tests
                 await base.DisposeAsync(disposing);
             }
 
-            public FileRoomStream(string path, FileMode mode) : base(new byte[1024]) => Stream = new FileStream(path, mode);
+            public FileRoomStream(string path, FileMode mode) : base(new byte[4]) => Stream = new FileStream(path, mode);
 
         }
 

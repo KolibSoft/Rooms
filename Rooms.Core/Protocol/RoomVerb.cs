@@ -14,23 +14,23 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static int Scan(ReadOnlySpan<byte> data, int index = 0)
         {
-            while (index < data.Length && CheckLetter(data[index]))
+            while (index < data.Length && CheckWord(data[index]))
                 index++;
             if (index < data.Length && CheckBlank(data[index]))
                 index++;
             return index;
-            static bool CheckLetter(byte c) => c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+            static bool CheckWord(byte c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
             static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
         public static int Scan(ReadOnlySpan<char> data, int index = 0)
         {
-            while (index < data.Length && CheckLetter(data[index]))
+            while (index < data.Length && CheckWord(data[index]))
                 index++;
             if (index < data.Length && CheckBlank(data[index]))
                 index++;
             return index;
-            static bool CheckLetter(char c) => c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+            static bool CheckWord(char c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
             static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
