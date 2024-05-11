@@ -31,7 +31,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             do
             {
                 var chunk = await GetChunkAsync(token);
-                if (_length == -1) throw new IOException("Room verb broken");
+                if (_length < 1) throw new IOException("Room verb broken");
                 var length = RoomVerb.Scan(chunk.Span);
                 await data.WriteAsync(chunk.Slice(0, length));
                 _position += length;
@@ -47,7 +47,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             do
             {
                 var chunk = await GetChunkAsync(token);
-                if (_length == -1) throw new IOException("Room channel broken");
+                if (_length < 1) throw new IOException("Room channel broken");
                 var length = RoomChannel.Scan(chunk.Span);
                 await data.WriteAsync(chunk.Slice(0, length));
                 _position += length;
@@ -63,7 +63,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             do
             {
                 var chunk = await GetChunkAsync(token);
-                if (_length == -1) throw new IOException("Room count broken");
+                if (_length < 1) throw new IOException("Room count broken");
                 var length = RoomCount.Scan(chunk.Span);
                 await data.WriteAsync(chunk.Slice(0, length));
                 _position += length;
@@ -81,7 +81,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             while (index < count)
             {
                 var chunk = await GetChunkAsync(token);
-                if (_length == -1) throw new IOException("Room content broken");
+                if (_length < 1) throw new IOException("Room content broken");
                 var length = Math.Min(chunk.Length, count - index);
                 chunk.CopyTo(data.AsMemory().Slice(index, length));
                 index += length;
@@ -114,7 +114,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             while (index < verb.Length)
             {
                 var length = await WriteAsync(verb.Data.Slice(index), token);
-                if (length == -1) throw new IOException("Room verb broken");
+                if (length < 1) throw new IOException("Room verb broken");
                 index += length;
             }
         }
@@ -125,7 +125,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             while (index < channel.Length)
             {
                 var length = await WriteAsync(channel.Data.Slice(index), token);
-                if (length == -1) throw new IOException("Room channel broken");
+                if (length < 1) throw new IOException("Room channel broken");
                 index += length;
             }
         }
@@ -136,7 +136,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             while (index < count.Length)
             {
                 var length = await WriteAsync(count.Data.Slice(index), token);
-                if (length == -1) throw new IOException("Room count broken");
+                if (length < 1) throw new IOException("Room count broken");
                 index += length;
             }
         }
@@ -147,7 +147,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             while (index < content.Length)
             {
                 var length = await WriteAsync(content.Data.Slice(index), token);
-                if (length == -1) throw new IOException("Room content broken");
+                if (length < 1) throw new IOException("Room content broken");
                 index += length;
             }
         }

@@ -24,7 +24,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 index++;
             return index;
             static bool CheckSign(byte c) => c == '+' || c == '-';
-            static bool CheckHexadecimal(byte c) => c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9';
+            static bool CheckHexadecimal(byte c) => c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f' || c >= '0' && c <= '9';
             static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
@@ -38,7 +38,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 index++;
             return index;
             static bool CheckSign(char c) => c == '+' || c == '-';
-            static bool CheckHexadecimal(char c) => c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9';
+            static bool CheckHexadecimal(char c) => c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f' || c >= '0' && c <= '9';
             static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 

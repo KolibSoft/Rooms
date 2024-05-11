@@ -7,7 +7,7 @@ namespace KolibSoft.Rooms.Tests
     {
 
         [Fact]
-        public async void TestRoomStream()
+        public async void TestRoomStreamWrite()
         {
             var message = new RoomMessage();
             using (var stream = new FileRoomStream("stream.txt", FileMode.Create))
@@ -17,6 +17,12 @@ namespace KolibSoft.Rooms.Tests
                 message.Content = RoomContent.Create(Encoding.UTF8.GetBytes("CONTENT"));
                 await stream.WriteMessageAsync(message);
             }
+        }
+
+        [Fact]
+        public async void TestRoomStreamRead()
+        {
+            var message = new RoomMessage();
             using (var stream = new FileRoomStream("stream.txt", FileMode.Open))
             {
                 message.Verb = default;
