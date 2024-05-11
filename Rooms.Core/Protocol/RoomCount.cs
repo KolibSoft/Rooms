@@ -8,9 +8,9 @@ namespace KolibSoft.Rooms.Core.Protocol
     public struct RoomCount
     {
 
-        public ReadOnlySpan<byte> Data => _data;
+        public ReadOnlyMemory<byte> Data => _data;
 
-        public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
+        public override string ToString() => $"{Encoding.UTF8.GetString(_data)}";
 
         public RoomCount(ArraySegment<byte> data) => _data = data;
 

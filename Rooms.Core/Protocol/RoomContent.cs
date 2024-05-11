@@ -9,9 +9,9 @@ namespace KolibSoft.Rooms.Core.Protocol
     public struct RoomContent
     {
 
-        public ReadOnlySpan<byte> Data => _data;
+        public ReadOnlyMemory<byte> Data => _data;
 
-        public override string ToString() => $"{Convert.ToBase64String(Data)}";
+        public override string ToString() => $"{Convert.ToBase64String(_data)}";
 
         public RoomContent(ArraySegment<byte> data) => _data = data;
 

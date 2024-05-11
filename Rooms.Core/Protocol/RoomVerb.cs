@@ -7,7 +7,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     public struct RoomVerb
     {
 
-        public ReadOnlySpan<byte> Data => _data;
+        public ReadOnlyMemory<byte> Data => _data;
 
         public override string ToString() => $"{Encoding.UTF8.GetString(_data)}";
 
