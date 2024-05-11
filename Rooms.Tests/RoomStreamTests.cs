@@ -7,7 +7,7 @@ namespace KolibSoft.Rooms.Tests
     {
 
         [Fact]
-        public async void TestRoomStreamWrite()
+        public async void TestRoomStreamWriteProtocol()
         {
             var protocol = new RoomProtocol();
             var content = Encoding.UTF8.GetBytes("CONTENT");
@@ -22,7 +22,21 @@ namespace KolibSoft.Rooms.Tests
         }
 
         [Fact]
-        public async void TestRoomStreamRead()
+        public async void TestRoomStreamWriteMessage()
+        {
+            var message = new RoomMessage();
+            var content = Encoding.UTF8.GetBytes("CONTENT");
+            using (var stream = new FileRoomStream("stream.txt", FileMode.Create))
+            {
+                message.Verb = "SOME_VERB";
+                message.Channel = -1;
+                message.Content = content;
+                await stream.WriteMessageAsync(message);
+            }
+        }
+
+        [Fact]
+        public async void TestRoomStreamReadProtocol()
         {
             var protocol = new RoomProtocol();
             var content = "";
@@ -33,6 +47,21 @@ namespace KolibSoft.Rooms.Tests
                 protocol.Content = default;
                 await stream.ReadProtocolAsync(protocol);
                 content = Encoding.UTF8.GetString(protocol.Content.Data!);
+            }
+        }
+
+        [Fact]
+        public async void TestRoomStreamReadMessage()
+        {
+            var message = new RoomMessage();
+            var content = "";
+            using (var stream = new FileRoomStream("stream.txt", FileMode.Open))
+            {
+                message.Verb = string.Empty;
+                message.Channel = 0;
+                message.Content = Array.Empty<byte>();
+                await stream.ReadMessageAsync(message);
+                content = Encoding.UTF8.GetString(message.Content);
             }
         }
 
