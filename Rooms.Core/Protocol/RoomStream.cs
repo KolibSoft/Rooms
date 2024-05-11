@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 
 namespace KolibSoft.Rooms.Core.Protocol
 {
-    public abstract class RoomStream
+    public abstract class RoomStream : IAsyncDisposable, IDisposable
     {
 
-        protected abstract Task<int> ReadAsync(Memory<byte> buffer, CancellationToken token);
+        public bool IsDisposed => _disposed;
+
+        protected abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token);
 
         private async Task<Memory<byte>> GetChunkAsync(CancellationToken token)
         {
@@ -16,7 +18,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             {
                 _position = 0;
                 _length = await ReadAsync(_buffer, token);
-                if (_length == -1)
+                if (_length < 1)
                     return default;
             }
             var slice = _buffer.AsMemory().Slice(_position, _length - _position);
@@ -89,6 +91,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public async Task ReadMessageAsync(RoomMessage message, CancellationToken token = default)
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             var verb = await ReadVerbAsync(token);
             if (verb.Length == 0) throw new IOException("Room verb not found");
             var channel = await ReadChannelAsync(token);
@@ -103,7 +106,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             message.Content = content;
         }
 
-        protected abstract Task<int> WriteAsync(Memory<byte> buffer, CancellationToken token);
+        protected abstract ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token);
 
         private async Task WriteVerbAsync(RoomVerb verb, CancellationToken token)
         {
@@ -151,6 +154,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public async Task WriteMessageAsync(RoomMessage message, CancellationToken token = default)
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             if (message.Verb.Length == 0) throw new IOException("Room verb not found");
             if (message.Channel.Length == 0) throw new IOException("Room channel not found");
             var count = (RoomCount)message.Content.Length;
@@ -160,11 +164,34 @@ namespace KolibSoft.Rooms.Core.Protocol
             await WriteContentAsync(message.Content, token);
         }
 
+        protected virtual ValueTask DisposeAsync(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _buffer = default;
+                _disposed = true;
+            }
+            return ValueTask.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            _ = DisposeAsync(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsync(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
         protected RoomStream(ArraySegment<byte> buffer) => _buffer = buffer;
 
         private ArraySegment<byte> _buffer;
         private int _position = 0;
         private int _length = 0;
+        private bool _disposed = false;
 
     }
 }
