@@ -10,6 +10,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     {
 
         public readonly ArraySegment<byte> Data;
+        public int Length => Data.Count;
         public override string ToString() => $"{Convert.ToBase64String(Data)}";
         public RoomContent(ArraySegment<byte> data) => Data = data;
 

@@ -11,7 +11,7 @@ public class RoomCountTests
 
     [Theory]
     [InlineData(255)]
-    public void TestCast(long count) => Assert.Equal(count, (long)(RoomCount)count);
+    public void TestCast(int count) => Assert.Equal(count, (int)(RoomCount)count);
 
 
 }

@@ -8,6 +8,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     {
 
         public readonly ArraySegment<byte> Data;
+        public int Length => Data.Count;
         public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
         public RoomVerb(ArraySegment<byte> data) => Data = data;
 
@@ -15,16 +16,22 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             while (index < data.Length && CheckLetter(data[index]))
                 index++;
+            if (index < data.Length && CheckBlank(data[index]))
+                index++;
             return index;
             static bool CheckLetter(byte c) => c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
         public static int Scan(ReadOnlySpan<char> data, int index = 0)
         {
             while (index < data.Length && CheckLetter(data[index]))
                 index++;
+            if (index < data.Length && CheckBlank(data[index]))
+                index++;
             return index;
             static bool CheckLetter(char c) => c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
         }
 
         public static bool Verify(ReadOnlySpan<byte> data) => Scan(data) == data.Length;

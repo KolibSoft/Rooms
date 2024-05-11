@@ -11,7 +11,7 @@ public class RoomChannelTests
 
     [Theory]
     [InlineData(255)]
-    public void TestCast(long channel) => Assert.Equal(channel, (long)(RoomChannel)channel);
+    public void TestCast(int channel) => Assert.Equal(channel, (int)(RoomChannel)channel);
 
 
 }
