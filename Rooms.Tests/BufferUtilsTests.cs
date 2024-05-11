@@ -12,8 +12,7 @@ public class BufferUtilsTests
         var buffer = new byte[1024];
         var verb = RoomVerb.Parse("VERB");
         var channel = RoomChannel.Parse("0000");
-        var content = RoomContent.Create("V2VsY29tZSB0byBCYXNlNjQgc3RyaW5nIGlzIGdvb2Qh");
-        var count = (RoomCount)content.Data.Length;
+        var count = RoomCount.Parse("21");
         buffer.AsSpan()
             .WriteVerb(verb)
             .WriteValue((byte)' ')
@@ -21,11 +20,9 @@ public class BufferUtilsTests
             .WriteValue((byte)' ')
             .WriteCount(count)
             .WriteValue((byte)'\n')
-            .WriteContent(content)
             ;
         verb = default;
         channel = default;
-        content = default;
         count = default;
         byte value;
         ((ReadOnlySpan<byte>)buffer.AsSpan())
@@ -35,7 +32,6 @@ public class BufferUtilsTests
             .ReadValue(out value)
             .ReadCount(out count)
             .ReadValue(out value)
-            .ReadContent(out content)
         ;
     }
 
