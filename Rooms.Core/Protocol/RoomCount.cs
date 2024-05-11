@@ -18,18 +18,18 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static int Scan(ReadOnlySpan<byte> data, int index = 0)
         {
-            while (index < data.Length && CheckHexadecimal(data[index]))
+            while (index < data.Length && CheckDigit(data[index]))
                 index++;
             return index;
-            static bool CheckHexadecimal(byte c) => c >= '0' && c <= '9';
+            static bool CheckDigit(byte c) => c >= '0' && c <= '9';
         }
 
         public static int Scan(ReadOnlySpan<char> data, int index = 0)
         {
-            while (index < data.Length && CheckHexadecimal(data[index]))
+            while (index < data.Length && CheckDigit(data[index]))
                 index++;
             return index;
-            static bool CheckHexadecimal(char c) => c >= '0' && c <= '9';
+            static bool CheckDigit(char c) => c >= '0' && c <= '9';
         }
 
         public static bool Verify(ReadOnlySpan<byte> data) => Scan(data) == data.Length;
