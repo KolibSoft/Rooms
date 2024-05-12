@@ -37,6 +37,7 @@ namespace KolibSoft.Rooms.Core.Sockets
         }
 
         public RoomWebStream(WebSocket socket, ArraySegment<byte> buffer) : base(buffer) => Socket = socket;
+        public RoomWebStream(WebSocket socket, int buffering = 1024) : this(socket, new byte[buffering]) { }
 
     }
 }

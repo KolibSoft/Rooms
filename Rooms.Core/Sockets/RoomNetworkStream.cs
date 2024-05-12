@@ -9,21 +9,26 @@ namespace KolibSoft.Rooms.Core.Sockets
     public class RoomNetworkStream : RoomStream
     {
 
-        public NetworkStream Stream { get; private set; }
+        public TcpClient Client { get; private set; }
 
         protected override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
         {
-            var result = await Stream.ReadAsync(buffer, token);
+            if (!Client.Connected) return 0;
+            using var stream = Client.GetStream();
+            var result = await stream.ReadAsync(buffer, token);
             return result;
         }
 
         protected override async ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token)
         {
-            await Stream.WriteAsync(buffer, token);
+            if (!Client.Connected) return 0;
+            using var stream = Client.GetStream();
+            await stream.WriteAsync(buffer, token);
             return buffer.Length;
         }
 
-        public RoomNetworkStream(NetworkStream stream, ArraySegment<byte> buffer) : base(buffer) => Stream = stream;
+        public RoomNetworkStream(TcpClient client, ArraySegment<byte> buffer) : base(buffer) => Client = client;
+        public RoomNetworkStream(TcpClient client, int buffering = 1024) : this(client, new byte[buffering]) { }
 
     }
 }
