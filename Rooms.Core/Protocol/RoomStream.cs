@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 
 namespace KolibSoft.Rooms.Core.Protocol
 {
-    public abstract class RoomStream : IAsyncDisposable, IDisposable
+    public abstract class RoomStream : IRoomStream
     {
 
         public bool IsDisposed => _disposed;
 
         protected abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token);
 
-        private async Task<Memory<byte>> GetChunkAsync(CancellationToken token)
+        private async ValueTask<Memory<byte>> GetChunkAsync(CancellationToken token)
         {
             if (_position == _length)
             {
@@ -25,7 +25,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             return slice;
         }
 
-        private async Task<RoomVerb> ReadVerbAsync(CancellationToken token)
+        private async ValueTask<RoomVerb> ReadVerbAsync(CancellationToken token)
         {
             var data = new MemoryStream();
             do
@@ -41,7 +41,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             return verb;
         }
 
-        private async Task<RoomChannel> ReadChannelAsync(CancellationToken token)
+        private async ValueTask<RoomChannel> ReadChannelAsync(CancellationToken token)
         {
             var data = new MemoryStream();
             do
@@ -57,7 +57,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             return channel;
         }
 
-        private async Task<RoomCount> ReadCountAsync(CancellationToken token)
+        private async ValueTask<RoomCount> ReadCountAsync(CancellationToken token)
         {
             var data = new MemoryStream();
             do
@@ -73,7 +73,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             return count;
         }
 
-        private async Task<RoomContent> ReadContentAsync(int count, CancellationToken token)
+        private async ValueTask<RoomContent> ReadContentAsync(int count, CancellationToken token)
         {
             if (count == 0) return default;
             var data = new byte[count];
@@ -90,7 +90,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             return new RoomContent(data);
         }
 
-        public async Task ReadProtocolAsync(RoomProtocol protocol, CancellationToken token = default)
+        public async ValueTask ReadProtocolAsync(RoomProtocol protocol, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             var verb = await ReadVerbAsync(token);
@@ -108,19 +108,9 @@ namespace KolibSoft.Rooms.Core.Protocol
             protocol.Content = content;
         }
 
-        public async Task ReadMessageAsync(RoomMessage message, CancellationToken token = default)
-        {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            var protocol = new RoomProtocol();
-            await ReadProtocolAsync(protocol, token);
-            message.Verb = protocol.Verb.ToString().Trim();
-            message.Channel = (int)protocol.Channel;
-            message.Content = protocol.Content.Data;
-        }
-
         protected abstract ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token);
 
-        private async Task WriteVerbAsync(RoomVerb verb, CancellationToken token)
+        private async ValueTask WriteVerbAsync(RoomVerb verb, CancellationToken token)
         {
             var index = 0;
             while (index < verb.Length)
@@ -131,7 +121,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
-        private async Task WriteChannelAsync(RoomChannel channel, CancellationToken token)
+        private async ValueTask WriteChannelAsync(RoomChannel channel, CancellationToken token)
         {
             var index = 0;
             while (index < channel.Length)
@@ -142,7 +132,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
-        private async Task WriteCountAsync(RoomCount count, CancellationToken token)
+        private async ValueTask WriteCountAsync(RoomCount count, CancellationToken token)
         {
             var index = 0;
             while (index < count.Length)
@@ -153,7 +143,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
-        private async Task WriteContentAsync(RoomContent content, CancellationToken token)
+        private async ValueTask WriteContentAsync(RoomContent content, CancellationToken token)
         {
             var index = 0;
             while (index < content.Length)
@@ -164,7 +154,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
-        public async Task WriteProtocolAsync(RoomProtocol protocol, CancellationToken token = default)
+        public async ValueTask WriteProtocolAsync(RoomProtocol protocol, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             if (protocol.Verb.Length == 0) throw new IOException("Room verb not found");
@@ -176,19 +166,6 @@ namespace KolibSoft.Rooms.Core.Protocol
             var count = (int)protocol.Count;
             if (protocol.Content.Length != count) throw new IOException("Room content corrupt");
             await WriteContentAsync(protocol.Content, token);
-        }
-
-        public async Task WriteMessageAsync(RoomMessage message, CancellationToken token = default)
-        {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            var protocol = new RoomProtocol
-            {
-                Verb = RoomVerb.Parse($"{message.Verb.Trim()} "),
-                Channel = (RoomChannel)message.Channel,
-                Count = (RoomCount)message.Content.Length,
-                Content = RoomContent.Create(message.Content)
-            };
-            await WriteProtocolAsync(protocol, token);
         }
 
         protected virtual ValueTask DisposeAsync(bool disposing)
