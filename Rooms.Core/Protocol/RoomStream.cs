@@ -14,7 +14,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         public int MaxContentLength { get; set; } = 4 * 1024 * 1024;
         public bool IsDisposed => _disposed;
 
-        protected abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default);
+        public abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default);
 
         protected async ValueTask<ReadOnlyMemory<byte>> GetChunkAsync(CancellationToken token = default)
         {
@@ -153,7 +153,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             protocol.Content = content;
         }
 
-        protected abstract ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token);
+        public abstract ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token);
 
         public async ValueTask WriteVerbAsync(RoomVerb verb, CancellationToken token = default)
         {

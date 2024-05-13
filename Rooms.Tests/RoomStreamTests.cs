@@ -70,13 +70,13 @@ namespace KolibSoft.Rooms.Tests
 
             public FileStream Stream { get; }
 
-            protected override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
             {
                 var result = await Stream.ReadAsync(buffer, token);
                 return result;
             }
 
-            protected override async ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token)
+            public override async ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token)
             {
                 await Stream.WriteAsync(buffer, token);
                 return buffer.Length;
