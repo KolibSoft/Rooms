@@ -8,11 +8,12 @@ namespace KolibSoft.Rooms.Core.Protocol
     public readonly struct RoomChannel
     {
 
-        public readonly byte[] Data;
-        public int Length => Data?.Length ?? 0;
-        public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
-        public bool Validate() => Verify(Data ?? Array.Empty<byte>());
-        public RoomChannel(byte[] data) => Data = data;
+        public ReadOnlyMemory<byte> Data => _data;
+        public int Length => _data.Count;
+        public override string ToString() => $"{Encoding.UTF8.GetString(_data)}";
+        public bool Validate() => Verify(_data);
+        public RoomChannel(ArraySegment<byte> data) => _data = data;
+        private readonly ArraySegment<byte> _data;
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
@@ -103,15 +104,15 @@ namespace KolibSoft.Rooms.Core.Protocol
         public static explicit operator int(RoomChannel channel)
         {
             if (channel.Length >= 3)
-                if (channel.Data[0] == '-')
+                if (channel._data[0] == '-')
                 {
-                    var text = Encoding.UTF8.GetString(channel.Data.AsSpan().Slice(1));
+                    var text = Encoding.UTF8.GetString(channel._data.AsSpan().Slice(1));
                     var number = int.Parse(text, NumberStyles.HexNumber);
                     return -number;
                 }
-                else if (channel.Data[0] == '+')
+                else if (channel._data[0] == '+')
                 {
-                    var text = Encoding.UTF8.GetString(channel.Data.AsSpan().Slice(1));
+                    var text = Encoding.UTF8.GetString(channel._data.AsSpan().Slice(1));
                     var number = int.Parse(text, NumberStyles.HexNumber);
                     return number;
                 }
@@ -121,15 +122,15 @@ namespace KolibSoft.Rooms.Core.Protocol
         public static explicit operator long(RoomChannel channel)
         {
             if (channel.Length >= 3)
-                if (channel.Data[0] == '-')
+                if (channel._data[0] == '-')
                 {
-                    var text = Encoding.UTF8.GetString(channel.Data.AsSpan().Slice(1));
+                    var text = Encoding.UTF8.GetString(channel._data.AsSpan().Slice(1));
                     var number = long.Parse(text, NumberStyles.HexNumber);
                     return -number;
                 }
-                else if (channel.Data[0] == '+')
+                else if (channel._data[0] == '+')
                 {
-                    var text = Encoding.UTF8.GetString(channel.Data.AsSpan().Slice(1));
+                    var text = Encoding.UTF8.GetString(channel._data.AsSpan().Slice(1));
                     var number = long.Parse(text, NumberStyles.HexNumber);
                     return number;
                 }

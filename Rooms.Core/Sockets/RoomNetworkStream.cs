@@ -19,7 +19,7 @@ namespace KolibSoft.Rooms.Core.Sockets
             return result;
         }
 
-        protected override async ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token)
+        protected override async ValueTask<int> WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
         {
             if (!Client.Connected) return 0;
             var stream = Client.GetStream();

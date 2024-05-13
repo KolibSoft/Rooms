@@ -8,11 +8,12 @@ namespace KolibSoft.Rooms.Core.Protocol
     public readonly struct RoomCount
     {
 
-        public readonly byte[] Data;
-        public int Length => Data?.Length ?? 0;
-        public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
-        public bool Validate() => Verify(Data ?? Array.Empty<byte>());
-        public RoomCount(byte[] data) => Data = data;
+        public ReadOnlyMemory<byte> Data => _data;
+        public int Length => _data.Count;
+        public override string ToString() => $"{Encoding.UTF8.GetString(_data)}";
+        public bool Validate() => Verify(_data);
+        public RoomCount(ArraySegment<byte> data) => _data = data;
+        private readonly ArraySegment<byte> _data;
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
@@ -88,7 +89,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (count.Length >= 2)
             {
-                var text = Encoding.UTF8.GetString(count.Data);
+                var text = Encoding.UTF8.GetString(count._data);
                 var number = long.Parse(text, NumberStyles.Integer, null);
                 return number;
             }

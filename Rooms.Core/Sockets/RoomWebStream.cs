@@ -29,7 +29,7 @@ namespace KolibSoft.Rooms.Core.Sockets
             return result.Count;
         }
 
-        protected override async ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token)
+        protected override async ValueTask<int> WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
         {
             if (Socket.State != WebSocketState.Open) return 0;
             await Socket.SendAsync(buffer, WebSocketMessageType.Binary, true, token);

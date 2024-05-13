@@ -163,7 +163,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
-        protected abstract ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token);
+        protected abstract ValueTask<int> WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
 
         private async ValueTask WriteVerbAsync(RoomVerb verb, CancellationToken token)
         {
@@ -172,7 +172,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < verb.Length)
             {
-                var length = await WriteAsync(verb.Data.AsMemory().Slice(index), token);
+                var length = await WriteAsync(verb.Data.Slice(index), token);
                 if (length < 1) throw new IOException("Room verb broken");
                 index += length;
             }
@@ -185,7 +185,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < channel.Length)
             {
-                var length = await WriteAsync(channel.Data.AsMemory().Slice(index), token);
+                var length = await WriteAsync(channel.Data.Slice(index), token);
                 if (length < 1) throw new IOException("Room channel broken");
                 index += length;
             }
@@ -198,7 +198,7 @@ namespace KolibSoft.Rooms.Core.Protocol
             var index = 0;
             while (index < count.Length)
             {
-                var length = await WriteAsync(count.Data.AsMemory().Slice(index), token);
+                var length = await WriteAsync(count.Data.Slice(index), token);
                 if (length < 1) throw new IOException("Room count broken");
                 index += length;
             }

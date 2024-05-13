@@ -50,7 +50,7 @@ namespace KolibSoft.Rooms.Tests
                 return result;
             }
 
-            protected override async ValueTask<int> WriteAsync(Memory<byte> buffer, CancellationToken token)
+            protected override async ValueTask<int> WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
             {
                 await Stream.WriteAsync(buffer, token);
                 return buffer.Length;
