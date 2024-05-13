@@ -11,49 +11,31 @@ namespace KolibSoft.Rooms.Core.Protocol
         public readonly byte[] Data;
         public int Length => Data?.Length ?? 0;
         public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
+        public bool Validate() => Verify(Data);
         public RoomChannel(byte[] data) => Data = data;
-
-
-        public static int Scan(ReadOnlySpan<byte> data, int index = 0)
-        {
-            if (index < data.Length && CheckSign(data[index]))
-                index++;
-            while (index < data.Length && CheckHexadecimal(data[index]))
-                index++;
-            if (index < data.Length && CheckBlank(data[index]))
-                index++;
-            return index;
-            static bool CheckSign(byte c) => c == '+' || c == '-';
-            static bool CheckHexadecimal(byte c) => c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f' || c >= '0' && c <= '9';
-            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
-        }
-
-        public static int Scan(ReadOnlySpan<char> data, int index = 0)
-        {
-            if (index < data.Length && CheckSign(data[index]))
-                index++;
-            while (index < data.Length && CheckHexadecimal(data[index]))
-                index++;
-            if (index < data.Length && CheckBlank(data[index]))
-                index++;
-            return index;
-            static bool CheckSign(char c) => c == '+' || c == '-';
-            static bool CheckHexadecimal(char c) => c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f' || c >= '0' && c <= '9';
-            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
-        }
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
-            return Scan(data) == data.Length && CheckSign(data[0]) && CheckBlank(data[^1]);
-            static bool CheckSign(byte c) => c == '+' || c == '-';
-            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+            if (data.Length < 3 || !DataUtils.IsSign(data[0]))
+                return false;
+            int index;
+            if ((index = data.Slice(1).ScanHexadecimal()) < 1)
+                return false;
+            if (data.Slice(index).ScanBlanks() < 1)
+                return false;
+            return true;
         }
 
         public static bool Verify(ReadOnlySpan<char> data)
         {
-            return Scan(data) == data.Length && CheckSign(data[0]) && CheckBlank(data[^1]);
-            static bool CheckSign(char c) => c == '+' || c == '-';
-            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+            if (data.Length < 3 || !DataUtils.IsSign(data[0]))
+                return false;
+            int index;
+            if ((index = data.Slice(1).ScanHexadecimal()) < 1)
+                return false;
+            if (data.Slice(index).ScanBlanks() < 1)
+                return false;
+            return true;
         }
 
         public static bool TryParse(ReadOnlySpan<byte> data, out RoomChannel channel)
@@ -106,6 +88,22 @@ namespace KolibSoft.Rooms.Core.Protocol
             }
         }
 
+        public static explicit operator RoomChannel(long number)
+        {
+            if (number >= 0)
+            {
+                var text = $"+{number:x} ";
+                var channel = new RoomChannel(Encoding.UTF8.GetBytes(text));
+                return channel;
+            }
+            else
+            {
+                var text = $"-{-number:x} ";
+                var channel = new RoomChannel(Encoding.UTF8.GetBytes(text));
+                return channel;
+            }
+        }
+
         public static explicit operator int(RoomChannel channel)
         {
             if (channel.Length >= 3)
@@ -119,6 +117,24 @@ namespace KolibSoft.Rooms.Core.Protocol
                 {
                     var text = Encoding.UTF8.GetString(channel.Data.AsSpan().Slice(1));
                     var number = int.Parse(text, NumberStyles.HexNumber);
+                    return number;
+                }
+            throw new InvalidOperationException("Invalid internal data");
+        }
+
+        public static explicit operator long(RoomChannel channel)
+        {
+            if (channel.Length >= 3)
+                if (channel.Data[0] == '-')
+                {
+                    var text = Encoding.UTF8.GetString(channel.Data.AsSpan().Slice(1));
+                    var number = long.Parse(text, NumberStyles.HexNumber);
+                    return -number;
+                }
+                else if (channel.Data[0] == '+')
+                {
+                    var text = Encoding.UTF8.GetString(channel.Data.AsSpan().Slice(1));
+                    var number = long.Parse(text, NumberStyles.HexNumber);
                     return number;
                 }
             throw new InvalidOperationException("Invalid internal data");

@@ -10,40 +10,31 @@ namespace KolibSoft.Rooms.Core.Protocol
         public readonly byte[] Data;
         public int Length => Data?.Length ?? 0;
         public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
+        public bool Validate() => Verify(Data);
         public RoomVerb(byte[] data) => Data = data;
-
-        public static int Scan(ReadOnlySpan<byte> data, int index = 0)
-        {
-            while (index < data.Length && CheckWord(data[index]))
-                index++;
-            if (index < data.Length && CheckBlank(data[index]))
-                index++;
-            return index;
-            static bool CheckWord(byte c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
-            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
-        }
-
-        public static int Scan(ReadOnlySpan<char> data, int index = 0)
-        {
-            while (index < data.Length && CheckWord(data[index]))
-                index++;
-            if (index < data.Length && CheckBlank(data[index]))
-                index++;
-            return index;
-            static bool CheckWord(char c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
-            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
-        }
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
-            return Scan(data) == data.Length && CheckBlank(data[^1]);
-            static bool CheckBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+            if (data.Length < 2)
+                return false;
+            int index;
+            if ((index = data.Slice(0).ScanWord()) < 1)
+                return false;
+            if (data.Slice(index).ScanBlanks() < 1)
+                return false;
+            return true;
         }
 
         public static bool Verify(ReadOnlySpan<char> data)
         {
-            return Scan(data) == data.Length && CheckBlank(data[^1]);
-            static bool CheckBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+            if (data.Length < 2)
+                return false;
+            int index;
+            if ((index = data.Slice(0).ScanWord()) < 1)
+                return false;
+            if (data.Slice(index).ScanBlanks() < 1)
+                return false;
+            return true;
         }
 
         public static bool TryParse(ReadOnlySpan<byte> data, out RoomVerb verb)
