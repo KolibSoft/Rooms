@@ -16,26 +16,22 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
-            if (data.Length < 3 || !DataUtils.IsSign(data[0]))
-                return false;
-            int index;
-            if ((index = data.Slice(1).ScanHexadecimal()) < 1)
-                return false;
-            if (data.Slice(index).ScanBlanks() < 1)
-                return false;
-            return true;
+            if (data.Length < 3 || !DataUtils.IsSign(data[0])) return false;
+            var index = data.Slice(1).ScanHexadecimal();
+            if (index < 1) return false;
+            if (index < data.Length && DataUtils.IsBlank(data[index]))
+                index++;
+            return index == data.Length;
         }
 
         public static bool Verify(ReadOnlySpan<char> data)
         {
-            if (data.Length < 3 || !DataUtils.IsSign(data[0]))
-                return false;
-            int index;
-            if ((index = data.Slice(1).ScanHexadecimal()) < 1)
-                return false;
-            if (data.Slice(index).ScanBlanks() < 1)
-                return false;
-            return true;
+            if (data.Length < 3 || !DataUtils.IsSign(data[0])) return false;
+            var index = data.Slice(1).ScanHexadecimal();
+            if (index < 1) return false;
+            if (index < data.Length && DataUtils.IsBlank(data[index]))
+                index++;
+            return index == data.Length;
         }
 
         public static bool TryParse(ReadOnlySpan<byte> data, out RoomChannel channel)

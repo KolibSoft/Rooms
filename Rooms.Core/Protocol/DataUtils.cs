@@ -6,34 +6,9 @@ namespace KolibSoft.Rooms.Core.Protocol
     {
 
         public static bool IsBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
-        public static int ScanBlanks(this ReadOnlySpan<byte> data, int min = 1, int max = int.MaxValue)
-        {
-            var index = 0;
-            while (index < data.Length && IsBlank(data[index]))
-            {
-                index++;
-                if (index > max)
-                    return 0;
-            }
-            if (index < min)
-                return 0;
-            return index;
-        }
-
         public static bool IsBlank(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
-        public static int ScanBlanks(this ReadOnlySpan<char> data, int min = 1, int max = int.MaxValue)
-        {
-            var index = 0;
-            while (index < data.Length && IsBlank(data[index]))
-            {
-                index++;
-                if (index > max)
-                    return 0;
-            }
-            if (index < min)
-                return 0;
-            return index;
-        }
+        public static bool IsSign(byte c) => c == '-' || c == '+';
+        public static bool IsSign(char c) => c == '-' || c == '+';
 
         public static bool IsLetter(byte c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
         public static int ScanWord(this ReadOnlySpan<byte> data, int min = 1, int max = int.MaxValue)
@@ -65,7 +40,6 @@ namespace KolibSoft.Rooms.Core.Protocol
             return index;
         }
 
-        public static bool IsSign(byte c) => c == '-' || c == '+';
         public static bool IsDigit(byte c) => c >= '0' && c <= '9';
         public static int ScanDigit(this ReadOnlySpan<byte> data, int min = 1, int max = int.MaxValue)
         {
@@ -81,7 +55,6 @@ namespace KolibSoft.Rooms.Core.Protocol
             return index;
         }
 
-        public static bool IsSign(char c) => c == '-' || c == '+';
         public static bool IsDigit(char c) => c >= '0' && c <= '9';
         public static int ScanDigit(this ReadOnlySpan<char> data, int min = 1, int max = int.MaxValue)
         {

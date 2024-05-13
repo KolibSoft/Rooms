@@ -14,30 +14,24 @@ namespace KolibSoft.Rooms.Core.Protocol
         public bool Validate() => Verify(Data);
         public RoomCount(byte[] data) => Data = data;
 
-
-
         public static bool Verify(ReadOnlySpan<byte> data)
         {
-            if (data.Length == 0)
-                return false;
-            int index;
-            if ((index = data.Slice(0).ScanDigit()) < 1)
-                return false;
-            if (data.Slice(index).ScanBlanks() < 1)
-                return false;
-            return true;
+            if (data.Length < 2) return false;
+            var index = data.Slice(0).ScanDigit();
+            if (index < 1) return false;
+            if (index < data.Length && DataUtils.IsBlank(data[index]))
+                index++;
+            return index == data.Length;
         }
 
         public static bool Verify(ReadOnlySpan<char> data)
         {
-            if (data.Length == 0)
-                return false;
-            int index;
-            if ((index = data.Slice(0).ScanDigit()) < 1)
-                return false;
-            if (data.Slice(index).ScanBlanks() < 1)
-                return false;
-            return true;
+            if (data.Length < 2) return false;
+            var index = data.Slice(0).ScanDigit();
+            if (index < 1) return false;
+            if (index < data.Length && DataUtils.IsBlank(data[index]))
+                index++;
+            return index == data.Length;
         }
 
         public static bool TryParse(ReadOnlySpan<byte> data, out RoomCount count)
