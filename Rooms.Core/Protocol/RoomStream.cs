@@ -8,10 +8,10 @@ namespace KolibSoft.Rooms.Core.Protocol
     public abstract class RoomStream : IRoomStream
     {
 
-        public int MaxVerbLength { get; set; } = 128;
-        public int MaxChannelLength { get; set; } = 32;
-        public int MaxCountLength { get; set; } = 32;
-        public int MaxContentLength { get; set; } = 4 * 1024 * 1024;
+        public int MaxVerbLength { get; set; } = DefaultMaxVerbLength;
+        public int MaxChannelLength { get; set; } = DefaultMaxChannelLength;
+        public int MaxCountLength { get; set; } = DefaultMaxCountLength;
+        public int MaxContentLength { get; set; } = DefaultMaxContentLength;
         public bool IsDisposed => _disposed;
 
         protected abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default);
@@ -255,6 +255,11 @@ namespace KolibSoft.Rooms.Core.Protocol
         private int _position = 0;
         private int _length = 0;
         private bool _disposed = false;
+
+        public const int DefaultMaxVerbLength = 128;
+        public const int DefaultMaxChannelLength = 32;
+        public const int DefaultMaxCountLength = 32;
+        public const int DefaultMaxContentLength = 4 * 1024 * 1024;
 
     }
 }
