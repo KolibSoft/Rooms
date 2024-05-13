@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace KolibSoft.Rooms.Core.Protocol
 {
@@ -7,7 +8,7 @@ namespace KolibSoft.Rooms.Core.Protocol
     {
         public string Verb { get; set; } = string.Empty;
         public int Channel { get; set; } = 0;
-        public byte[] Content { get; set; } = Array.Empty<byte>();
+        public Stream Content { get; set; } = Stream.Null;
     }
 
 }

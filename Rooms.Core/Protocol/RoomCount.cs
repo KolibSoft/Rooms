@@ -11,7 +11,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         public readonly byte[] Data;
         public int Length => Data?.Length ?? 0;
         public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
-        public bool Validate() => Verify(Data);
+        public bool Validate() => Verify(Data ?? Array.Empty<byte>());
         public RoomCount(byte[] data) => Data = data;
 
         public static bool Verify(ReadOnlySpan<byte> data)

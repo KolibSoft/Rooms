@@ -11,13 +11,13 @@ namespace KolibSoft.Rooms.Core.Protocol
         public readonly byte[] Data;
         public int Length => Data?.Length ?? 0;
         public override string ToString() => $"{Encoding.UTF8.GetString(Data)}";
-        public bool Validate() => Verify(Data);
+        public bool Validate() => Verify(Data ?? Array.Empty<byte>());
         public RoomChannel(byte[] data) => Data = data;
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
             if (data.Length < 3 || !DataUtils.IsSign(data[0])) return false;
-            var index = data.Slice(1).ScanHexadecimal();
+            var index = data.Slice(1).ScanHexadecimal() + 1;
             if (index < 1) return false;
             if (index < data.Length && DataUtils.IsBlank(data[index]))
                 index++;
@@ -27,7 +27,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         public static bool Verify(ReadOnlySpan<char> data)
         {
             if (data.Length < 3 || !DataUtils.IsSign(data[0])) return false;
-            var index = data.Slice(1).ScanHexadecimal();
+            var index = data.Slice(1).ScanHexadecimal() + 1;
             if (index < 1) return false;
             if (index < data.Length && DataUtils.IsBlank(data[index]))
                 index++;
