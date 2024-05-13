@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using KolibSoft.Rooms.Core.Protocol;
 
-/*
 namespace KolibSoft.Rooms.Core.Sockets
 {
     public class RoomNetworkStream : RoomStream
@@ -28,9 +27,8 @@ namespace KolibSoft.Rooms.Core.Sockets
             return buffer.Length;
         }
 
-        public RoomNetworkStream(TcpClient client, ArraySegment<byte> buffer) : base(buffer) => Client = client;
-        public RoomNetworkStream(TcpClient client, int buffering = 1024) : this(client, new byte[buffering]) { }
+        public RoomNetworkStream(TcpClient client, ArraySegment<byte> readBuffer, ArraySegment<byte> writeBuffer) : base(readBuffer, writeBuffer) => Client = client;
+        public RoomNetworkStream(TcpClient client, int readBuffering = 1024, int writeBuffering = 1024) : this(client, new byte[readBuffering], new byte[writeBuffering]) { }
 
     }
 }
-*/

@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using KolibSoft.Rooms.Core.Protocol;
 
-/*
 namespace KolibSoft.Rooms.Core.Sockets
 {
     public class RoomWebStream : RoomStream
@@ -37,9 +36,9 @@ namespace KolibSoft.Rooms.Core.Sockets
             return buffer.Length;
         }
 
-        public RoomWebStream(WebSocket socket, ArraySegment<byte> buffer) : base(buffer) => Socket = socket;
-        public RoomWebStream(WebSocket socket, int buffering = 1024) : this(socket, new byte[buffering]) { }
+
+        public RoomWebStream(WebSocket socket, ArraySegment<byte> readBuffer, ArraySegment<byte> writeBuffer) : base(readBuffer, writeBuffer) => Socket = socket;
+        public RoomWebStream(WebSocket socket, int readBuffering = 1024, int writeBuffering = 1024) : this(socket, new byte[readBuffering], new byte[writeBuffering]) { }
 
     }
 }
-*/
