@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,24 +35,29 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             _data.SetLength(0);
+            var done = false;
             while (true)
             {
                 var chunk = await GetChunkAsync(token);
                 if (_length < 1) throw new IOException("Room verb broken");
                 var length = DataUtils.ScanWord(chunk.Span);
                 if (length < chunk.Length)
-                    length += DataUtils.IsBlank(chunk.Span[length]) ? 1 : 0;
+                    length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
                 if (_data.Length + length > MaxVerbLength) throw new IOException("Room verb too large");
-                if (_position < _length)
+                if (_position < _length || done)
                 {
                     if (_data.Length > 0)
                     {
                         await _data.WriteAsync(chunk.Slice(0, length));
-                        return new RoomVerb(_data.ToArray());
+                        var verb = new RoomVerb(_data.ToArray());
+                        return verb;
                     }
                     if (length > 0)
-                        return new RoomVerb(chunk.Slice(0, length).ToArray());
+                    {
+                        var verb = new RoomVerb(chunk.Slice(0, length).ToArray());
+                        return verb;
+                    }
                     return default;
                 }
                 await _data.WriteAsync(chunk.Slice(0, length));
@@ -62,6 +68,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             _data.SetLength(0);
+            var done = false;
             while (true)
             {
                 var chunk = await GetChunkAsync(token);
@@ -70,18 +77,22 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (length < chunk.Length)
                     length += DataUtils.ScanHexadecimal(chunk.Slice(length).Span);
                 if (length < chunk.Length)
-                    length += DataUtils.IsBlank(chunk.Span[length]) ? 1 : 0;
+                    length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
                 if (_data.Length + length > MaxChannelLength) throw new IOException("Room channel too large");
-                if (_position < _length)
+                if (_position < _length || done)
                 {
                     if (_data.Length > 0)
                     {
                         await _data.WriteAsync(chunk.Slice(0, length));
-                        return new RoomChannel(_data.ToArray());
+                        var channel = new RoomChannel(_data.ToArray());
+                        return channel;
                     }
                     if (length > 0)
-                        return new RoomChannel(chunk.Slice(0, length).ToArray());
+                    {
+                        var channel = new RoomChannel(chunk.Slice(0, length).ToArray());
+                        return channel;
+                    }
                     return default;
                 }
                 await _data.WriteAsync(chunk.Slice(0, length));
@@ -92,24 +103,29 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             _data.SetLength(0);
+            var done = false;
             while (true)
             {
                 var chunk = await GetChunkAsync(token);
                 if (_length < 1) throw new IOException("Room count broken");
                 var length = DataUtils.ScanDigit(chunk.Span);
                 if (length < chunk.Length)
-                    length += DataUtils.IsBlank(chunk.Span[length]) ? 1 : 0;
+                    length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
                 if (_data.Length + length > MaxCountLength) throw new IOException("Room count too large");
-                if (_position < _length)
+                if (_position < _length || done)
                 {
                     if (_data.Length > 0)
                     {
                         await _data.WriteAsync(chunk.Slice(0, length));
-                        return new RoomCount(_data.ToArray());
+                        var count = new RoomCount(_data.ToArray());
+                        return count;
                     }
                     if (length > 0)
-                        return new RoomCount(chunk.Slice(0, length).ToArray());
+                    {
+                        var count = new RoomCount(chunk.Slice(0, length).ToArray());
+                        return count;
+                    }
                     return default;
                 }
                 await _data.WriteAsync(chunk.Slice(0, length));

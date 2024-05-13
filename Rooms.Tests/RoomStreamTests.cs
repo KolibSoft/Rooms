@@ -14,8 +14,8 @@ namespace KolibSoft.Rooms.Tests
             using (var stream = new FileRoomStream("stream.txt", FileMode.Create))
             {
                 protocol.Verb = RoomVerb.Parse("VERB ");
-                protocol.Channel = RoomChannel.Parse("+0000 ");
-                protocol.Count = RoomCount.Parse($"{content.Length}\n");
+                protocol.Channel = (RoomChannel)0;
+                protocol.Count = (RoomCount)content.Length;
                 await stream.WriteProtocolAsync(protocol);
                 await stream.WriteContentAsync(content.Length, new MemoryStream(content));
             }
@@ -62,7 +62,7 @@ namespace KolibSoft.Rooms.Tests
                 await base.DisposeAsync(disposing);
             }
 
-            public FileRoomStream(string path, FileMode mode) : base(new byte[4], new byte[4]) => Stream = new FileStream(path, mode);
+            public FileRoomStream(string path, FileMode mode) : base(new byte[1024], new byte[1024]) => Stream = new FileStream(path, mode);
 
         }
 
