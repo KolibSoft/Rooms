@@ -11,7 +11,7 @@ namespace KolibSoft.Rooms.Core.Sockets
     {
 
         public WebSocket Socket { get; private set; }
-        public override bool IsAlive => Socket.State == WebSocketState.Open;
+        public override bool IsAlive => !IsDisposed && Socket.State == WebSocketState.Open;
 
         protected override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
         {

@@ -11,7 +11,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public RoomStreamOptions Options { get; private set; } = new RoomStreamOptions();
         public abstract bool IsAlive { get; }
-        public bool IsDisposed => _disposed;
+        protected bool IsDisposed => _disposed;
 
         protected abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default);
 

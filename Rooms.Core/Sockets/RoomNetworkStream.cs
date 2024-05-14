@@ -10,7 +10,7 @@ namespace KolibSoft.Rooms.Core.Sockets
     {
 
         public TcpClient Client { get; private set; }
-        public override bool IsAlive => Client.Connected;
+        public override bool IsAlive => !IsDisposed && Client.Connected;
 
         protected override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
         {
