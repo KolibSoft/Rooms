@@ -146,7 +146,7 @@ async Task RunWebClient()
 class RoomClient : RoomService
 {
 
-    protected override async void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content)
+    protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
     {
         var clone = new MemoryStream((int)content.Length);
         await content.CopyToAsync(clone);
@@ -172,10 +172,13 @@ class RoomClient : RoomService
 class RoomServer : RoomHub
 {
 
-    protected override void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content)
+    protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
     {
-        Console.Write($"< {protocol.Verb}{protocol.Channel}{protocol.Count}");
-        base.OnMessageReceived(stream, protocol, content);
+        var clone = new MemoryStream((int)content.Length);
+        await content.CopyToAsync(clone);
+        Console.WriteLine($"< {protocol.Verb}{protocol.Channel}{Encoding.UTF8.GetString(clone.ToArray())}");
+        clone.Seek(0, SeekOrigin.Begin);
+        await base.OnReceiveAsync(stream, protocol, clone, token);
     }
 
     protected override void OnStart()

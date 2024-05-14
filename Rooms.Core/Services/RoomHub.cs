@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using KolibSoft.Rooms.Core.Protocol;
 using KolibSoft.Rooms.Core.Streams;
@@ -11,18 +12,13 @@ namespace KolibSoft.Rooms.Core.Services
     public class RoomHub : RoomService
     {
 
-        protected override void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content)
+        protected override ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
         {
             _messages = _messages.Enqueue(new RoomMessage(stream, protocol, content));
+            return ValueTask.CompletedTask;
         }
 
-        protected override void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content) { }
-
-        protected virtual async void OnProcessLoopbackMessage(RoomMessage message)
-        {
-            await message.Source.WriteProtocolAsync(message.Protocol);
-            await message.Source.WriteContentAsync((long)message.Protocol.Count, message.Content);
-        }
+        protected virtual ValueTask OnLoopbackAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token) => OnSendAsync(stream, protocol, content, token);
 
         private async void TransmitAsync()
         {
@@ -35,7 +31,7 @@ namespace KolibSoft.Rooms.Core.Services
                     if (channel == 0)
                         try
                         {
-                            OnProcessLoopbackMessage(message);
+                            await OnLoopbackAsync(message.Source, message.Protocol, message.Content, default);
                         }
                         catch (Exception error)
                         {
@@ -67,8 +63,7 @@ namespace KolibSoft.Rooms.Core.Services
                                 message.Protocol.Channel = (RoomChannel)(hash ^ stream.GetHashCode());
                                 try
                                 {
-                                    await stream.WriteProtocolAsync(message.Protocol);
-                                    await stream.WriteContentAsync((long)message.Protocol.Count, clone);
+                                    await OnSendAsync(stream, message.Protocol, clone, default);
                                 }
                                 catch (Exception error)
                                 {
@@ -84,8 +79,7 @@ namespace KolibSoft.Rooms.Core.Services
                         {
                             try
                             {
-                                await target.WriteProtocolAsync(message.Protocol);
-                                await target.WriteContentAsync((long)message.Protocol.Count, message.Content);
+                                await OnSendAsync(target, message.Protocol, message.Content, default);
                             }
                             catch (Exception error)
                             {

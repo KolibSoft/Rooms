@@ -19,7 +19,8 @@ namespace KolibSoft.Rooms.Core.Services
         protected IEnumerable<IRoomStream> Streams => _streams;
         protected bool IsDisposed => _disposed;
 
-        protected virtual void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content) { }
+        protected virtual ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token) => ValueTask.CompletedTask;
+
         public virtual async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
@@ -45,7 +46,7 @@ namespace KolibSoft.Rooms.Core.Services
                         await stream.ReadContentAsync(count, content, token);
                     }
                     content.Seek(0, SeekOrigin.Begin);
-                    OnMessageReceived(stream, protocol, content);
+                    await OnReceiveAsync(stream, protocol, content, token);
                 }
             }
             catch (Exception error)
@@ -55,7 +56,12 @@ namespace KolibSoft.Rooms.Core.Services
             _streams = _streams.Remove(stream);
         }
 
-        protected virtual void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content) { }
+        protected virtual async ValueTask OnSendAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
+        {
+            await stream.WriteProtocolAsync(protocol, token);
+            await stream.WriteContentAsync((long)protocol.Count, content, token);
+        }
+
         public virtual async ValueTask SendAsync(RoomProtocol protocol, Stream content, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
@@ -66,9 +72,7 @@ namespace KolibSoft.Rooms.Core.Services
                 var stream = _streams.First();
                 try
                 {
-                    await stream.WriteProtocolAsync(protocol, token);
-                    await stream.WriteContentAsync((long)protocol.Count, content, token);
-                    OnMessageSent(stream, protocol, content);
+                    await OnSendAsync(stream, protocol, content, token);
                 }
                 catch (Exception error)
                 {
@@ -98,9 +102,7 @@ namespace KolibSoft.Rooms.Core.Services
                     clone.Seek(0, SeekOrigin.Begin);
                     try
                     {
-                        await stream.WriteProtocolAsync(protocol, token);
-                        await stream.WriteContentAsync(count, content, token);
-                        OnMessageSent(stream, protocol, content);
+                        await OnSendAsync(stream, protocol, content, token);
                     }
                     catch (Exception error)
                     {
