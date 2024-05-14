@@ -24,37 +24,35 @@ namespace KolibSoft.Rooms.Core.Services
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
-            if (!_streams.Contains(stream))
+            if (_streams.Contains(stream)) throw new InvalidOperationException("Stream already listening");
+            _streams = _streams.Add(stream);
+            try
             {
-                _streams = _streams.Add(stream);
-                try
+                while (_running && stream.IsAlive)
                 {
-                    while (_running && stream.IsAlive)
+                    var protocol = new RoomProtocol();
+                    await stream.ReadProtocolAsync(protocol, token);
+                    var count = (long)protocol.Count;
+                    var content = Stream.Null;
+                    if (count < Options.MaxFastBuffering)
                     {
-                        var protocol = new RoomProtocol();
-                        await stream.ReadProtocolAsync(protocol, token);
-                        var count = (long)protocol.Count;
-                        var content = Stream.Null;
-                        if (count < Options.MaxFastBuffering)
-                        {
-                            content = new MemoryStream((int)count);
-                            await stream.ReadContentAsync(count, content, token);
-                        }
-                        else
-                        {
-                            content = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
-                            await stream.ReadContentAsync(count, content, token);
-                        }
-                        content.Seek(0, SeekOrigin.Begin);
-                        OnMessageReceived(stream, protocol, content);
+                        content = new MemoryStream((int)count);
+                        await stream.ReadContentAsync(count, content, token);
                     }
+                    else
+                    {
+                        content = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
+                        await stream.ReadContentAsync(count, content, token);
+                    }
+                    content.Seek(0, SeekOrigin.Begin);
+                    OnMessageReceived(stream, protocol, content);
                 }
-                catch (Exception error)
-                {
-                    if (Logger != null) await Logger.WriteLineAsync($"Error receiving message: {error}");
-                }
-                _streams = _streams.Remove(stream);
             }
+            catch (Exception error)
+            {
+                if (Logger != null) await Logger.WriteLineAsync($"Error receiving message: {error}");
+            }
+            _streams = _streams.Remove(stream);
         }
 
         protected virtual void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content) { }

@@ -18,20 +18,20 @@ switch (mode)
 
 async Task RunTcpServer()
 {
-    using var hub = new RoomHub() { Logger = Console.Error };
-    hub.Start();
+    using var service = new RoomServer() { Logger = Console.Error };
+    service.Start();
     using var listener = new TcpListener(IPAddress.Any, 55000);
     await ListenAsync(listener);
     //////////////////////////////////////////////////////////////
     async Task ListenAsync(TcpListener listener)
     {
         listener.Start();
-        while (hub.IsRunning)
+        while (service.IsRunning)
             try
             {
                 var client = await listener.AcceptTcpClientAsync();
                 var stream = new RoomNetworkStream(client);
-                _ = hub.ListenAsync(stream);
+                _ = service.ListenAsync(stream);
             }
             catch (Exception error)
             {
@@ -43,8 +43,8 @@ async Task RunTcpServer()
 
 async Task RunWebServer()
 {
-    using var hub = new RoomHub() { Logger = Console.Error };
-    hub.Start();
+    using var service = new RoomServer() { Logger = Console.Error };
+    service.Start();
     using var listener = new HttpListener();
     listener.Prefixes.Add("http://localhost:55000/");
     await ListenAsync(listener);
@@ -52,14 +52,14 @@ async Task RunWebServer()
     async Task ListenAsync(HttpListener listener)
     {
         listener.Start();
-        while (hub.IsRunning)
+        while (service.IsRunning)
             try
             {
                 var httpContext = await listener.GetContextAsync();
                 var wsContext = await httpContext.AcceptWebSocketAsync(null);
                 var socket = wsContext.WebSocket;
                 var stream = new RoomWebStream(socket);
-                _ = hub.ListenAsync(stream);
+                _ = service.ListenAsync(stream);
             }
             catch (Exception error)
             {
@@ -83,7 +83,7 @@ async Task RunTcpClient()
     {
         while (service.IsRunning)
         {
-            var command = Console.ReadLine();
+            var command = await Task.Run(() => Console.ReadLine());
             try
             {
                 var parts = command!.Split(" ");
@@ -119,7 +119,7 @@ async Task RunWebClient()
     {
         while (service.IsRunning)
         {
-            var command = Console.ReadLine();
+            var command = await Task.Run(() => Console.ReadLine());
             try
             {
                 var parts = command!.Split(" ");
@@ -148,9 +148,33 @@ class RoomClient : RoomService
     {
         var clone = new MemoryStream((int)content.Length);
         await content.CopyToAsync(clone);
-        Console.WriteLine($"{protocol.Verb}{protocol.Channel}{protocol.Count}{Encoding.UTF8.GetString(clone.ToArray())}");
+        Console.WriteLine($"< {protocol.Verb}{protocol.Channel}{protocol.Count}{Encoding.UTF8.GetString(clone.ToArray())}");
+    }
+
+    protected override void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content)
+    {
+        Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count} ...");
     }
 
     public RoomClient(RoomServiceOptions? options = null) : base(options) { }
+
+}
+
+class RoomServer : RoomHub
+{
+
+    protected override void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content)
+    {
+        Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count} ...");
+    }
+
+    protected override async void OnProcessLoopbackMessage(RoomMessage message)
+    {
+        var clone = new MemoryStream((int)message.Content.Length);
+        await message.Content.CopyToAsync(clone);
+        Console.WriteLine($"< {message.Protocol.Verb}{message.Protocol.Channel}{message.Protocol.Count}{Encoding.UTF8.GetString(clone.ToArray())}");
+    }
+
+    public RoomServer(RoomServiceOptions? options = null) : base(options) { }
 
 }
