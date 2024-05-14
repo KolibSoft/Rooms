@@ -12,7 +12,7 @@ namespace KolibSoft.Rooms.Core.Services
         public bool IsRunning { get; }
         public ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default);
         public ValueTask SendAsync(RoomProtocol protocol, Stream content, CancellationToken token = default);
-        public ValueTask StartAsync();
-        public ValueTask StopAsync();
+        public void Start();
+        public void Stop();
     }
 }

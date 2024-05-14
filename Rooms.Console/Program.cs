@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using KolibSoft.Rooms.Core.Protocol;
+using KolibSoft.Rooms.Core.Services;
 using KolibSoft.Rooms.Core.Streams;
 
 var mode = Console.ReadLine();
@@ -17,43 +18,55 @@ switch (mode)
 
 async Task RunTcpServer()
 {
+    using var hub = new RoomHub();
+    hub.Start();
     using var listener = new TcpListener(IPAddress.Any, 55000);
-    listener.Start();
-    using var client = await listener.AcceptTcpClientAsync();
-    listener.Stop();
-    using var stream = new RoomNetworkStream(client);
-    //
-    var protocol = new RoomProtocol();
-    var data = new MemoryStream();
-    await stream.ReadProtocolAsync(protocol);
-    await stream.ReadContentAsync((long)protocol.Count, data);
-    Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count}[{data.Length} bytes]");
-    data.Seek(0, SeekOrigin.Begin);
-    await stream.WriteProtocolAsync(protocol);
-    await stream.WriteContentAsync((long)protocol.Count, data);
-    await Task.Delay(1000);
+    await ListenAsync(listener);
+    //////////////////////////////////////////////////////////////
+    async Task ListenAsync(TcpListener listener)
+    {
+        listener.Start();
+        while (hub.IsRunning)
+            try
+            {
+                var client = await listener.AcceptTcpClientAsync();
+                var stream = new RoomNetworkStream(client);
+                _ = hub.ListenAsync(stream);
+            }
+            catch (Exception error)
+            {
+                await Console.Error.WriteLineAsync($"Error listening connection: {error}");
+            }
+        listener.Stop();
+    }
 }
 
 async Task RunWebServer()
 {
+    using var hub = new RoomHub();
+    hub.Start();
     using var listener = new HttpListener();
     listener.Prefixes.Add("http://localhost:55000/");
-    listener.Start();
-    var httpContext = await listener.GetContextAsync();
-    var wsContext = await httpContext.AcceptWebSocketAsync(null);
-    using var socket = wsContext.WebSocket;
-    using var stream = new RoomWebStream(socket);
-    //
-    var protocol = new RoomProtocol();
-    var data = new MemoryStream();
-    await stream.ReadProtocolAsync(protocol);
-    await stream.ReadContentAsync((long)protocol.Count, data);
-    Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count}[{data.Length} bytes]");
-    data.Seek(0, SeekOrigin.Begin);
-    await stream.WriteProtocolAsync(protocol);
-    await stream.WriteContentAsync((long)protocol.Count, data);
-    await Task.Delay(1000);
-    listener.Stop();
+    await ListenAsync(listener);
+    ///////////////////////////////////////////////////////////
+    async Task ListenAsync(HttpListener listener)
+    {
+        listener.Start();
+        while (hub.IsRunning)
+            try
+            {
+                var httpContext = await listener.GetContextAsync();
+                var wsContext = await httpContext.AcceptWebSocketAsync(null);
+                var socket = wsContext.WebSocket;
+                var stream = new RoomWebStream(socket);
+                _ = hub.ListenAsync(stream);
+            }
+            catch (Exception error)
+            {
+                await Console.Error.WriteLineAsync($"Error listening connection: {error}");
+            }
+        listener.Stop();
+    }
 }
 
 async Task RunTcpClient()

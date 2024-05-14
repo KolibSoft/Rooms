@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using KolibSoft.Rooms.Core.Protocol;
 using KolibSoft.Rooms.Core.Streams;
 
@@ -76,6 +77,7 @@ namespace KolibSoft.Rooms.Core.Services
                         }
                     }
                 }
+                else await Task.Delay(100);
             }
         }
 

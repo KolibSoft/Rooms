@@ -108,27 +108,25 @@ namespace KolibSoft.Rooms.Core.Services
         }
 
         protected virtual void OnStart() { }
-        public ValueTask StartAsync()
+        public void Start()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running)
             {
-                OnStart();
                 _running = true;
+                OnStart();
             }
-            return ValueTask.CompletedTask;
         }
 
         protected virtual void OnStop() { }
-        public ValueTask StopAsync()
+        public void Stop()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (_running)
             {
-                OnStop();
                 _running = false;
+                OnStop();
             }
-            return ValueTask.CompletedTask;
         }
 
         protected virtual ValueTask DisposeAsync(bool disposing)
