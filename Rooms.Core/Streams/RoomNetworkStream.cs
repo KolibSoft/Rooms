@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using KolibSoft.Rooms.Core.Protocol;
 
-namespace KolibSoft.Rooms.Core.Sockets
+namespace KolibSoft.Rooms.Core.Streams
 {
     public class RoomNetworkStream : RoomStream
     {

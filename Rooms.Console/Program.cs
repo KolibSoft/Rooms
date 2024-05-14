@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using KolibSoft.Rooms.Core.Protocol;
-using KolibSoft.Rooms.Core.Sockets;
+using KolibSoft.Rooms.Core.Streams;
 
 var mode = Console.ReadLine();
 switch (mode)

@@ -1,4 +1,4 @@
-namespace KolibSoft.Rooms.Core.Protocol
+namespace KolibSoft.Rooms.Core.Streams
 {
     public sealed class RoomStreamOptions
     {

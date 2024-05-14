@@ -1,5 +1,6 @@
 using System.Text;
 using KolibSoft.Rooms.Core.Protocol;
+using KolibSoft.Rooms.Core.Streams;
 
 namespace KolibSoft.Rooms.Tests
 {

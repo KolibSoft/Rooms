@@ -2,8 +2,9 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using KolibSoft.Rooms.Core.Protocol;
 
-namespace KolibSoft.Rooms.Core.Protocol
+namespace KolibSoft.Rooms.Core.Streams
 {
     public interface IRoomStream : IAsyncDisposable, IDisposable
     {
