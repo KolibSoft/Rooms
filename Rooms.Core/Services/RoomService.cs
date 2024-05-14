@@ -62,6 +62,7 @@ namespace KolibSoft.Rooms.Core.Services
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
+            if (_streams.Length == 0) return;
             if (_streams.Length == 1)
             {
                 var stream = _streams.First();

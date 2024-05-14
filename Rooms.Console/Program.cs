@@ -18,7 +18,7 @@ switch (mode)
 
 async Task RunTcpServer()
 {
-    using var hub = new RoomHub();
+    using var hub = new RoomHub() { Logger = Console.Error };
     hub.Start();
     using var listener = new TcpListener(IPAddress.Any, 55000);
     await ListenAsync(listener);
@@ -43,7 +43,7 @@ async Task RunTcpServer()
 
 async Task RunWebServer()
 {
-    using var hub = new RoomHub();
+    using var hub = new RoomHub() { Logger = Console.Error };
     hub.Start();
     using var listener = new HttpListener();
     listener.Prefixes.Add("http://localhost:55000/");
@@ -71,48 +71,86 @@ async Task RunWebServer()
 
 async Task RunTcpClient()
 {
+    using var service = new RoomClient() { Logger = Console.Error };
+    service.Start();
     using var client = new TcpClient();
     await client.ConnectAsync(IPAddress.Loopback, 55000);
     using var stream = new RoomNetworkStream(client);
-    var message = "MESSAGE CONTENT";
-    //
-    var data = new MemoryStream(Encoding.UTF8.GetBytes(message));
-    var protocol = new RoomProtocol
+    CommandAsync();
+    await service.ListenAsync(stream);
+    ///////////////////////////////////////////////////////
+    async void CommandAsync()
     {
-        Verb = RoomVerb.Parse("ECHO "),
-        Channel = (RoomChannel)0,
-        Count = (RoomCount)data.Length
-    };
-    await stream.WriteProtocolAsync(protocol);
-    await stream.WriteContentAsync((long)protocol.Count, data);
-    data.Seek(0, SeekOrigin.Begin);
-    await stream.ReadProtocolAsync(protocol);
-    await stream.ReadContentAsync((long)protocol.Count, data);
-    Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count}[{data.Length} bytes]");
-    message = Encoding.UTF8.GetString(data.ToArray());
-    await Task.Delay(1000);
+        while (service.IsRunning)
+        {
+            var command = Console.ReadLine();
+            try
+            {
+                var parts = command!.Split(" ");
+                var protocol = new RoomProtocol
+                {
+                    Verb = RoomVerb.Parse($"{parts[0]} "),
+                    Channel = RoomChannel.Parse($"{parts[1]} "),
+                    Count = (RoomCount)parts[2].Length
+                };
+                var content = new MemoryStream(Encoding.UTF8.GetBytes(parts[2]));
+                await service.SendAsync(protocol, content);
+            }
+            catch (Exception error)
+            {
+                await Console.Error.WriteLineAsync($"Error parsing command: {error}");
+            }
+            await Task.Delay(100);
+        }
+    }
 }
 
 async Task RunWebClient()
 {
+    using var service = new RoomClient() { Logger = Console.Error };
+    service.Start();
     using var client = new ClientWebSocket();
     await client.ConnectAsync(new Uri("ws://localhost:55000"), default);
     using var stream = new RoomWebStream(client);
-    var message = "MESSAGE CONTENT";
-    //
-    var data = new MemoryStream(Encoding.UTF8.GetBytes(message));
-    var protocol = new RoomProtocol
+    CommandAsync();
+    await service.ListenAsync(stream);
+    //////////////////////////////////////////////////////////////////////
+    async void CommandAsync()
     {
-        Verb = RoomVerb.Parse("ECHO "),
-        Channel = (RoomChannel)0,
-        Count = (RoomCount)data.Length
-    };
-    await stream.WriteProtocolAsync(protocol);
-    await stream.WriteContentAsync((long)protocol.Count, data);
-    data.Seek(0, SeekOrigin.Begin);
-    await stream.ReadProtocolAsync(protocol);
-    await stream.ReadContentAsync((long)protocol.Count, data);
-    Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count}[{data.Length} bytes]");
-    message = Encoding.UTF8.GetString(data.ToArray());
-    await Task.Delay(1000);
+        while (service.IsRunning)
+        {
+            var command = Console.ReadLine();
+            try
+            {
+                var parts = command!.Split(" ");
+                var protocol = new RoomProtocol
+                {
+                    Verb = RoomVerb.Parse($"{parts[0]} "),
+                    Channel = RoomChannel.Parse($"{parts[1]} "),
+                    Count = (RoomCount)parts[2].Length
+                };
+                var content = new MemoryStream(Encoding.UTF8.GetBytes(parts[2]));
+                await service.SendAsync(protocol, content);
+            }
+            catch (Exception error)
+            {
+                await Console.Error.WriteLineAsync($"Error parsing command: {error}");
+            }
+            await Task.Delay(100);
+        }
+    }
+}
+
+class RoomClient : RoomService
+{
+
+    protected override async void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content)
+    {
+        var clone = new MemoryStream((int)content.Length);
+        await content.CopyToAsync(clone);
+        Console.WriteLine($"{protocol.Verb}{protocol.Channel}{protocol.Count}{Encoding.UTF8.GetString(clone.ToArray())}");
+    }
+
+    public RoomClient(RoomServiceOptions? options = null) : base(options) { }
+
 }
