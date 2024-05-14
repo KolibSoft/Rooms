@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -14,9 +15,11 @@ namespace KolibSoft.Rooms.Core.Services
 
         public RoomServiceOptions Options { get; private set; }
         public TextWriter? Logger { get; set; }
+        public bool IsRunning => _running;
+        protected IEnumerable<IRoomStream> Streams => _streams;
         protected bool IsDisposed => _disposed;
 
-        protected abstract void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content);
+        protected virtual void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content) { }
         public virtual async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
@@ -54,7 +57,7 @@ namespace KolibSoft.Rooms.Core.Services
             }
         }
 
-        protected abstract void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content);
+        protected virtual void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content) { }
         public virtual async ValueTask SendAsync(RoomProtocol protocol, Stream content, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
@@ -104,21 +107,25 @@ namespace KolibSoft.Rooms.Core.Services
             }
         }
 
+        protected virtual void OnStart() { }
         public ValueTask StartAsync()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running)
             {
+                OnStart();
                 _running = true;
             }
             return ValueTask.CompletedTask;
         }
 
+        protected virtual void OnStop() { }
         public ValueTask StopAsync()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (_running)
             {
+                OnStop();
                 _running = false;
             }
             return ValueTask.CompletedTask;
