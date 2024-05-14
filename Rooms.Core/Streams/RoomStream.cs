@@ -18,7 +18,6 @@ namespace KolibSoft.Rooms.Core.Streams
 
         private async ValueTask<ReadOnlyMemory<byte>> GetChunkAsync(CancellationToken token = default)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             if (_position == _length)
             {
                 _position = 0;
@@ -32,7 +31,6 @@ namespace KolibSoft.Rooms.Core.Streams
 
         private async ValueTask<RoomVerb> ReadVerbAsync(CancellationToken token)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             _data.SetLength(0);
             var done = false;
             while (true)
@@ -65,7 +63,6 @@ namespace KolibSoft.Rooms.Core.Streams
 
         private async ValueTask<RoomChannel> ReadChannelAsync(CancellationToken token)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             _data.SetLength(0);
             var done = false;
             while (true)
@@ -100,7 +97,6 @@ namespace KolibSoft.Rooms.Core.Streams
 
         private async ValueTask<RoomCount> ReadCountAsync(CancellationToken token)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             _data.SetLength(0);
             var done = false;
             while (true)
@@ -166,7 +162,6 @@ namespace KolibSoft.Rooms.Core.Streams
 
         private async ValueTask WriteVerbAsync(RoomVerb verb, CancellationToken token)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             if (verb.Length > Options.MaxVerbLength) throw new IOException("Room verb too large");
             var index = 0;
             while (index < verb.Length)
@@ -179,7 +174,6 @@ namespace KolibSoft.Rooms.Core.Streams
 
         private async ValueTask WriteChannelAsync(RoomChannel channel, CancellationToken token)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             if (channel.Length > Options.MaxChannelLength) throw new IOException("Room channel too large");
             var index = 0;
             while (index < channel.Length)
@@ -192,7 +186,6 @@ namespace KolibSoft.Rooms.Core.Streams
 
         private async ValueTask WriteCountAsync(RoomCount count, CancellationToken token)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             if (count.Length > Options.MaxCountLength) throw new IOException("Room count too large");
             var index = 0;
             while (index < count.Length)
