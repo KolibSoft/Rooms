@@ -72,7 +72,6 @@ async Task RunWebServer()
 async Task RunTcpClient()
 {
     using var service = new RoomClient() { Logger = Console.Error };
-    service.Options.MaxFastBuffering = 16;
     service.Start();
     using var client = new TcpClient();
     await client.ConnectAsync(IPAddress.Loopback, 55000);
@@ -109,7 +108,6 @@ async Task RunTcpClient()
 async Task RunWebClient()
 {
     using var service = new RoomClient() { Logger = Console.Error };
-    service.Options.MaxFastBuffering = 16;
     service.Start();
     using var client = new ClientWebSocket();
     await client.ConnectAsync(new Uri("ws://localhost:55000"), default);

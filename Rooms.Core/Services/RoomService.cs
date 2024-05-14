@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -29,6 +30,10 @@ namespace KolibSoft.Rooms.Core.Services
             _streams = _streams.Add(stream);
             try
             {
+                var ttl = TimeSpan.FromSeconds(1);
+                var stopwatch = new Stopwatch();
+                var rate = 0L;
+                stopwatch.Start();
                 while (_running && stream.IsAlive)
                 {
                     var protocol = new RoomProtocol();
@@ -45,6 +50,14 @@ namespace KolibSoft.Rooms.Core.Services
                         content = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
                         await stream.ReadContentAsync(count, content, token);
                     }
+                    if (stopwatch.Elapsed >= ttl)
+                    {
+                        rate = 0;
+                        stopwatch.Restart();
+                    }
+                    rate += count;
+                    if (rate > Options.MaxStreamRate)
+                        await Task.Delay(TimeSpan.FromSeconds(rate / Options.MaxStreamRate));
                     content.Seek(0, SeekOrigin.Begin);
                     await OnReceiveAsync(stream, protocol, content, token);
                 }
