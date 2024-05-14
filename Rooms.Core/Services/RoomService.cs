@@ -78,16 +78,19 @@ namespace KolibSoft.Rooms.Core.Services
             else
             {
                 var count = (long)protocol.Count;
-                var clone = Stream.Null;
-                if (count < Options.MaxFastBuffering)
+                var clone = content;
+                if (!clone.CanSeek)
                 {
-                    clone = new MemoryStream((int)count);
-                    await content.CopyToAsync(clone, token);
-                }
-                else
-                {
-                    clone = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
-                    await content.CopyToAsync(clone, token);
+                    if (count < Options.MaxFastBuffering)
+                    {
+                        clone = new MemoryStream((int)count);
+                        await content.CopyToAsync(clone, token);
+                    }
+                    else
+                    {
+                        clone = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
+                        await content.CopyToAsync(clone, token);
+                    }
                 }
                 foreach (var stream in _streams)
                 {
