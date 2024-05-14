@@ -11,6 +11,7 @@ namespace KolibSoft.Rooms.Core.Sockets
     {
 
         public WebSocket Socket { get; private set; }
+        public override bool IsAlive => Socket.State == WebSocketState.Open;
 
         protected override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
         {
@@ -37,8 +38,8 @@ namespace KolibSoft.Rooms.Core.Sockets
         }
 
 
-        public RoomWebStream(WebSocket socket, ArraySegment<byte> readBuffer, ArraySegment<byte> writeBuffer) : base(readBuffer, writeBuffer) => Socket = socket;
-        public RoomWebStream(WebSocket socket, int readBuffering = 1024, int writeBuffering = 1024) : this(socket, new byte[readBuffering], new byte[writeBuffering]) { }
+        public RoomWebStream(WebSocket socket, ArraySegment<byte> readBuffer, ArraySegment<byte> writeBuffer, RoomStreamOptions? options = null) : base(readBuffer, writeBuffer, options) => Socket = socket;
+        public RoomWebStream(WebSocket socket, int readBuffering = 1024, int writeBuffering = 1024, RoomStreamOptions? options = null) : this(socket, new byte[readBuffering], new byte[writeBuffering], options) { }
 
     }
 }

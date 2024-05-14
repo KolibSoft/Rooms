@@ -9,10 +9,8 @@ namespace KolibSoft.Rooms.Core.Protocol
     public abstract class RoomStream : IRoomStream
     {
 
-        public int MaxVerbLength { get; set; } = DefaultMaxVerbLength;
-        public int MaxChannelLength { get; set; } = DefaultMaxChannelLength;
-        public int MaxCountLength { get; set; } = DefaultMaxCountLength;
-        public int MaxContentLength { get; set; } = DefaultMaxContentLength;
+        public RoomStreamOptions Options { get; private set; } = new RoomStreamOptions();
+        public abstract bool IsAlive { get; }
         public bool IsDisposed => _disposed;
 
         protected abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default);
@@ -44,7 +42,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (length < chunk.Length)
                     length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
-                if (_data.Length + length > MaxVerbLength) throw new IOException("Room verb too large");
+                if (_data.Length + length > Options.MaxVerbLength) throw new IOException("Room verb too large");
                 if (_position < _length || done)
                 {
                     if (_data.Length > 0)
@@ -79,7 +77,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (length < chunk.Length)
                     length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
-                if (_data.Length + length > MaxChannelLength) throw new IOException("Room channel too large");
+                if (_data.Length + length > Options.MaxChannelLength) throw new IOException("Room channel too large");
                 if (_position < _length || done)
                 {
                     if (_data.Length > 0)
@@ -112,7 +110,7 @@ namespace KolibSoft.Rooms.Core.Protocol
                 if (length < chunk.Length)
                     length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
-                if (_data.Length + length > MaxCountLength) throw new IOException("Room count too large");
+                if (_data.Length + length > Options.MaxCountLength) throw new IOException("Room count too large");
                 if (_position < _length || done)
                 {
                     if (_data.Length > 0)
@@ -150,7 +148,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
             if (count == 0) return;
-            if (count > MaxContentLength) throw new IOException("Room content too large");
+            if (count > Options.MaxContentLength) throw new IOException("Room content too large");
             var index = 0L;
             while (index < count)
             {
@@ -168,7 +166,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         private async ValueTask WriteVerbAsync(RoomVerb verb, CancellationToken token)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            if (verb.Length > MaxVerbLength) throw new IOException("Room verb too large");
+            if (verb.Length > Options.MaxVerbLength) throw new IOException("Room verb too large");
             var index = 0;
             while (index < verb.Length)
             {
@@ -181,7 +179,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         private async ValueTask WriteChannelAsync(RoomChannel channel, CancellationToken token)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            if (channel.Length > MaxChannelLength) throw new IOException("Room channel too large");
+            if (channel.Length > Options.MaxChannelLength) throw new IOException("Room channel too large");
             var index = 0;
             while (index < channel.Length)
             {
@@ -194,7 +192,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         private async ValueTask WriteCountAsync(RoomCount count, CancellationToken token)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            if (count.Length > MaxCountLength) throw new IOException("Room count too large");
+            if (count.Length > Options.MaxCountLength) throw new IOException("Room count too large");
             var index = 0;
             while (index < count.Length)
             {
@@ -218,7 +216,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         public async ValueTask WriteContentAsync(long count, Stream content, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            if (count > MaxContentLength) throw new IOException("Room content too large");
+            if (count > Options.MaxContentLength) throw new IOException("Room content too large");
             var index = 0L;
             while (index < count)
             {
@@ -259,10 +257,11 @@ namespace KolibSoft.Rooms.Core.Protocol
             GC.SuppressFinalize(this);
         }
 
-        protected RoomStream(ArraySegment<byte> readBuffer, ArraySegment<byte> writeBuffer)
+        protected RoomStream(ArraySegment<byte> readBuffer, ArraySegment<byte> writeBuffer, RoomStreamOptions? options = null)
         {
             _readBuffer = readBuffer;
             _writeBuffer = writeBuffer;
+            Options = options ?? new RoomStreamOptions();
         }
 
         private MemoryStream _data = new MemoryStream();
@@ -271,11 +270,6 @@ namespace KolibSoft.Rooms.Core.Protocol
         private int _position = 0;
         private int _length = 0;
         private bool _disposed = false;
-
-        public const int DefaultMaxVerbLength = 128;
-        public const int DefaultMaxChannelLength = 32;
-        public const int DefaultMaxCountLength = 32;
-        public const int DefaultMaxContentLength = 4 * 1024 * 1024;
 
     }
 }

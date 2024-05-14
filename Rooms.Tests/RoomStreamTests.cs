@@ -43,6 +43,7 @@ namespace KolibSoft.Rooms.Tests
         {
 
             public FileStream Stream { get; }
+            public override bool IsAlive => Stream.SafeFileHandle?.IsInvalid == false;
 
             protected override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
             {

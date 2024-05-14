@@ -1,6 +1,6 @@
 namespace KolibSoft.Rooms.Core.Protocol
 {
-    public class RoomProtocol
+    public sealed class RoomProtocol
     {
         public RoomVerb Verb { get; set; }
         public RoomChannel Channel { get; set; }
