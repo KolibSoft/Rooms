@@ -55,7 +55,7 @@ namespace KolibSoft.Rooms.Core.Services
                             }
                             else
                             {
-                                var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.InternetCache), $"{DateTime.UtcNow.Ticks}");
+                                var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.InternetCache), "Content", $"{DateTime.UtcNow.Ticks}");
                                 clone = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
                                 await message.Content.CopyToAsync(clone);
                             }
