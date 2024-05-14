@@ -88,7 +88,8 @@ namespace KolibSoft.Rooms.Core.Services
                     }
                     else
                     {
-                        clone = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
+                        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.InternetCache), $"{DateTime.UtcNow.Ticks}");
+                        clone = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
                         await content.CopyToAsync(clone, token);
                     }
                 }
