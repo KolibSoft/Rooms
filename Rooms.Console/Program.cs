@@ -148,12 +148,19 @@ class RoomClient : RoomService
     {
         var clone = new MemoryStream((int)content.Length);
         await content.CopyToAsync(clone);
-        Console.WriteLine($"< {protocol.Verb}{protocol.Channel}{protocol.Count}{Encoding.UTF8.GetString(clone.ToArray())}");
+        Console.WriteLine($"< {protocol.Verb}{protocol.Channel}{Encoding.UTF8.GetString(clone.ToArray())}");
     }
 
-    protected override void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content)
+    protected override void OnStart()
     {
-        Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count} ...");
+        base.OnStart();
+        Console.WriteLine($"Service Started");
+    }
+
+    protected override void OnStop()
+    {
+        base.OnStop();
+        Console.WriteLine($"Service Stopped");
     }
 
     public RoomClient(RoomServiceOptions? options = null) : base(options) { }
@@ -163,16 +170,22 @@ class RoomClient : RoomService
 class RoomServer : RoomHub
 {
 
-    protected override void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content)
+    protected override void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content)
     {
-        Console.WriteLine($"> {protocol.Verb}{protocol.Channel}{protocol.Count} ...");
+        Console.Write($"< {protocol.Verb}{protocol.Channel}{protocol.Count}");
+        base.OnMessageReceived(stream, protocol, content);
     }
 
-    protected override async void OnProcessLoopbackMessage(RoomMessage message)
+    protected override void OnStart()
     {
-        var clone = new MemoryStream((int)message.Content.Length);
-        await message.Content.CopyToAsync(clone);
-        Console.WriteLine($"< {message.Protocol.Verb}{message.Protocol.Channel}{message.Protocol.Count}{Encoding.UTF8.GetString(clone.ToArray())}");
+        base.OnStart();
+        Console.WriteLine($"Service Started");
+    }
+
+    protected override void OnStop()
+    {
+        base.OnStop();
+        Console.WriteLine($"Service Stopped");
     }
 
     public RoomServer(RoomServiceOptions? options = null) : base(options) { }

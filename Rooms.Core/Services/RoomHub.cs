@@ -44,14 +44,27 @@ namespace KolibSoft.Rooms.Core.Services
                     else if (channel == -1)
                     {
                         var hash = message.Source.GetHashCode();
+                        var count = (long)message.Protocol.Count;
+                        var clone = Stream.Null;
+                        if (count < Options.MaxFastBuffering)
+                        {
+                            clone = new MemoryStream((int)count);
+                            await message.Content.CopyToAsync(clone);
+                        }
+                        else
+                        {
+                            clone = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
+                            await message.Content.CopyToAsync(clone);
+                        }
                         foreach (var stream in Streams)
                             if (stream != message.Source)
                             {
+                                clone.Seek(0, SeekOrigin.Begin);
                                 message.Protocol.Channel = (RoomChannel)(hash ^ stream.GetHashCode());
                                 try
                                 {
                                     await stream.WriteProtocolAsync(message.Protocol);
-                                    await stream.WriteContentAsync((long)message.Protocol.Count, message.Content);
+                                    await stream.WriteContentAsync((long)message.Protocol.Count, clone);
                                 }
                                 catch (Exception error)
                                 {
