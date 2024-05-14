@@ -47,7 +47,8 @@ namespace KolibSoft.Rooms.Core.Services
                     }
                     else
                     {
-                        content = new FileStream($"{DateTime.UtcNow.Ticks}", FileMode.Create, FileAccess.ReadWrite);
+                        var path = Path.Combine(Options.TempContentFolderPath, $"{DateTime.UtcNow.Ticks}");
+                        content = new FileStream(path, FileMode.Create, FileAccess.ReadWrite);
                         await stream.ReadContentAsync(count, content, token);
                     }
                     if (stopwatch.Elapsed >= ttl)
