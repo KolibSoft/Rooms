@@ -1,4 +1,5 @@
 using System.IO;
+using KolibSoft.Rooms.Core.Protocol;
 using KolibSoft.Rooms.Core.Streams;
 
 namespace KolibSoft.Rooms.Core.Services
@@ -7,13 +8,14 @@ namespace KolibSoft.Rooms.Core.Services
     {
 
         public IRoomStream Source { get; private set; }
-        public string Verb { get; set; } = string.Empty;
-        public int Channel { get; set; } = 0;
-        public Stream Content { get; set; } = Stream.Null;
+        public RoomProtocol Protocol { get; private set; }
+        public Stream Content { get; private set; }
 
-        public RoomMessage(IRoomStream source)
+        public RoomMessage(IRoomStream source, RoomProtocol protocol, Stream content)
         {
             Source = source;
+            Protocol = protocol;
+            Content = content;
         }
 
     }

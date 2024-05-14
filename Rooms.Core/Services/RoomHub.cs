@@ -10,19 +10,18 @@ namespace KolibSoft.Rooms.Core.Services
     public class RoomHub : RoomService
     {
 
-        public event EventHandler<RoomMessage>? MessageReceived;
-
         protected override void OnMessageReceived(IRoomStream stream, RoomProtocol protocol, Stream content)
         {
-            _messages = _messages.Enqueue(new RoomMessage(stream)
-            {
-                Verb = protocol.Verb.ToString().Trim(),
-                Channel = (int)protocol.Channel,
-                Content = content
-            });
+            _messages = _messages.Enqueue(new RoomMessage(stream, protocol, content));
         }
 
         protected override void OnMessageSent(IRoomStream stream, RoomProtocol protocol, Stream content) { }
+
+        protected virtual async void OnProcessLoopbackMessage(RoomMessage message)
+        {
+            await message.Source.WriteProtocolAsync(message.Protocol);
+            await message.Source.WriteContentAsync((long)message.Protocol.Count, message.Content);
+        }
 
         private async void TransmitAsync()
         {
@@ -31,23 +30,27 @@ namespace KolibSoft.Rooms.Core.Services
                 if (_messages.Any())
                 {
                     _messages = _messages.Dequeue(out RoomMessage message);
-                    if (message.Channel == 0) MessageReceived?.Invoke(this, message);
-                    else if (message.Channel == -1)
+                    var channel = (int)message.Protocol.Channel;
+                    if (channel == 0)
+                        try
+                        {
+                            OnProcessLoopbackMessage(message);
+                        }
+                        catch (Exception error)
+                        {
+                            if (Logger != null) await Logger.WriteLineAsync($"Error trasnmiting message: {error}");
+                        }
+                    else if (channel == -1)
                     {
                         var hash = message.Source.GetHashCode();
                         foreach (var stream in Streams)
                             if (stream != message.Source)
                             {
-                                var protocol = new RoomProtocol
-                                {
-                                    Verb = RoomVerb.Parse($"{message.Verb} "),
-                                    Channel = (RoomChannel)(hash ^ stream.GetHashCode()),
-                                    Count = (RoomCount)message.Content.Length
-                                };
+                                message.Protocol.Channel = (RoomChannel)(hash ^ stream.GetHashCode());
                                 try
                                 {
-                                    await stream.WriteProtocolAsync(protocol);
-                                    await stream.WriteContentAsync(message.Content.Length, message.Content);
+                                    await stream.WriteProtocolAsync(message.Protocol);
+                                    await stream.WriteContentAsync((long)message.Protocol.Count, message.Content);
                                 }
                                 catch (Exception error)
                                 {
@@ -57,20 +60,14 @@ namespace KolibSoft.Rooms.Core.Services
                     }
                     else
                     {
-                        var hash = message.Source.GetHashCode() ^ message.Channel;
+                        var hash = message.Source.GetHashCode() ^ channel;
                         var target = Streams.FirstOrDefault(x => x.GetHashCode() == hash);
                         if (target != null)
                         {
-                            var protocol = new RoomProtocol
-                            {
-                                Verb = RoomVerb.Parse($"{message.Verb} "),
-                                Channel = (RoomChannel)message.Channel,
-                                Count = (RoomCount)message.Content.Length
-                            };
                             try
                             {
-                                await target.WriteProtocolAsync(protocol);
-                                await target.WriteContentAsync(message.Content.Length, message.Content);
+                                await target.WriteProtocolAsync(message.Protocol);
+                                await target.WriteContentAsync((long)message.Protocol.Count, message.Content);
                             }
                             catch (Exception error)
                             {
