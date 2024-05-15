@@ -67,13 +67,13 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (number >= 0)
             {
-                var text = $"+{number:x} ";
+                var text = $"+{number:x}";
                 var channel = new RoomChannel(Encoding.UTF8.GetBytes(text));
                 return channel;
             }
             else
             {
-                var text = $"-{-number:x} ";
+                var text = $"-{-number:x}";
                 var channel = new RoomChannel(Encoding.UTF8.GetBytes(text));
                 return channel;
             }
@@ -83,13 +83,13 @@ namespace KolibSoft.Rooms.Core.Protocol
         {
             if (number >= 0)
             {
-                var text = $"+{number:x} ";
+                var text = $"+{number:x}";
                 var channel = new RoomChannel(Encoding.UTF8.GetBytes(text));
                 return channel;
             }
             else
             {
-                var text = $"-{-number:x} ";
+                var text = $"-{-number:x}";
                 var channel = new RoomChannel(Encoding.UTF8.GetBytes(text));
                 return channel;
             }
@@ -97,7 +97,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static explicit operator int(RoomChannel channel)
         {
-            if (channel.Length >= 3)
+            if (channel.Length >= 2)
                 if (channel._data[0] == '-')
                 {
                     var text = Encoding.UTF8.GetString(channel._data.AsSpan().Slice(1));
@@ -115,7 +115,7 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static explicit operator long(RoomChannel channel)
         {
-            if (channel.Length >= 3)
+            if (channel.Length >= 2)
                 if (channel._data[0] == '-')
                 {
                     var text = Encoding.UTF8.GetString(channel._data.AsSpan().Slice(1));

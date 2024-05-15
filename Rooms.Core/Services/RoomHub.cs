@@ -12,9 +12,9 @@ namespace KolibSoft.Rooms.Core.Services
     public class RoomHub : RoomService
     {
 
-        protected override ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
+        protected override ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
         {
-            _messages = _messages.Enqueue(new RoomHubMessage(stream, protocol, content));
+            _messages = _messages.Enqueue(new MessageContext(stream, message));
             return ValueTask.CompletedTask;
         }
 
@@ -24,12 +24,12 @@ namespace KolibSoft.Rooms.Core.Services
             {
                 if (_messages.Any())
                 {
-                    _messages = _messages.Dequeue(out RoomHubMessage message);
-                    var channel = (int)message.Protocol.Channel;
+                    _messages = _messages.Dequeue(out MessageContext context);
+                    var channel = context.Message.Channel;
                     if (channel == 0)
                         try
                         {
-                            await OnSendAsync(message.Source, message.Protocol, message.Content, default);
+                            await OnSendAsync(context.Stream, context.Message, default);
                         }
                         catch (Exception error)
                         {
@@ -37,31 +37,15 @@ namespace KolibSoft.Rooms.Core.Services
                         }
                     else if (channel == -1)
                     {
-                        var hash = message.Source.GetHashCode();
-                        var count = (long)message.Protocol.Count;
-                        var clone = message.Content;
-                        if (!clone.CanSeek)
-                        {
-                            if (count < Options.MaxFastBuffering)
-                            {
-                                clone = new MemoryStream((int)count);
-                                await message.Content.CopyToAsync(clone);
-                            }
-                            else
-                            {
-                                var path = Path.Combine(Options.TempContentFolderPath, $"{DateTime.UtcNow.Ticks}");
-                                clone = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
-                                await message.Content.CopyToAsync(clone);
-                            }
-                        }
+                        var hash = context.Stream.GetHashCode();
                         foreach (var stream in Streams)
-                            if (stream != message.Source)
+                            if (stream != context.Stream)
                             {
-                                clone.Seek(0, SeekOrigin.Begin);
-                                message.Protocol.Channel = (RoomChannel)(hash ^ stream.GetHashCode());
+                                context.Message.Content.Seek(0, SeekOrigin.Begin);
+                                context.Message.Channel = hash ^ stream.GetHashCode();
                                 try
                                 {
-                                    await OnSendAsync(stream, message.Protocol, clone, default);
+                                    await OnSendAsync(stream, context.Message, default);
                                 }
                                 catch (Exception error)
                                 {
@@ -71,13 +55,13 @@ namespace KolibSoft.Rooms.Core.Services
                     }
                     else
                     {
-                        var hash = message.Source.GetHashCode() ^ channel;
+                        var hash = context.Stream.GetHashCode() ^ channel;
                         var target = Streams.FirstOrDefault(x => x.GetHashCode() == hash);
                         if (target != null)
                         {
                             try
                             {
-                                await OnSendAsync(target, message.Protocol, message.Content, default);
+                                await OnSendAsync(target, context.Message, default);
                             }
                             catch (Exception error)
                             {
@@ -94,7 +78,21 @@ namespace KolibSoft.Rooms.Core.Services
 
         public RoomHub(RoomServiceOptions? options = null) : base(options) { }
 
-        private ImmutableQueue<RoomHubMessage> _messages = ImmutableQueue.Create<RoomHubMessage>();
+        private ImmutableQueue<MessageContext> _messages = ImmutableQueue.Create<MessageContext>();
+
+        private readonly struct MessageContext
+        {
+
+            public readonly IRoomStream Stream;
+            public readonly RoomMessage Message;
+
+            public MessageContext(IRoomStream stream, RoomMessage message)
+            {
+                Stream = stream;
+                Message = message;
+            }
+
+        }
 
     }
 }

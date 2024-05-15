@@ -87,14 +87,13 @@ async Task RunTcpClient()
             try
             {
                 var parts = command!.Split(" ");
-                var protocol = new RoomProtocol
+                var message = new RoomMessage
                 {
-                    Verb = RoomVerb.Parse($"{parts[0]} "),
-                    Channel = RoomChannel.Parse($"{parts[1]} "),
-                    Count = (RoomCount)parts[2].Length
+                    Verb = parts[0],
+                    Channel = int.Parse(parts[1]),
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(2).ToArray())))
                 };
-                var content = new MemoryStream(Encoding.UTF8.GetBytes(parts[2]));
-                await service.SendAsync(protocol, content);
+                await service.SendAsync(message);
             }
             catch (Exception error)
             {
@@ -123,14 +122,13 @@ async Task RunWebClient()
             try
             {
                 var parts = command!.Split(" ");
-                var protocol = new RoomProtocol
+                var message = new RoomMessage
                 {
-                    Verb = RoomVerb.Parse($"{parts[0]} "),
-                    Channel = RoomChannel.Parse($"{parts[1]} "),
-                    Count = (RoomCount)parts[2].Length
+                    Verb = parts[0],
+                    Channel = int.Parse(parts[1]),
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(2).ToArray())))
                 };
-                var content = new MemoryStream(Encoding.UTF8.GetBytes(parts[2]));
-                await service.SendAsync(protocol, content);
+                await service.SendAsync(message);
             }
             catch (Exception error)
             {
@@ -144,11 +142,11 @@ async Task RunWebClient()
 class RoomClient : RoomService
 {
 
-    protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
+    protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
     {
-        var clone = new MemoryStream((int)content.Length);
-        await content.CopyToAsync(clone);
-        Console.WriteLine($"< {protocol.Verb}{protocol.Channel}{Encoding.UTF8.GetString(clone.ToArray())}");
+        var clone = new MemoryStream((int)message.Content.Length);
+        await message.Content.CopyToAsync(clone);
+        Console.WriteLine($"< {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
     }
 
     protected override void OnStart()
@@ -170,13 +168,13 @@ class RoomClient : RoomService
 class RoomServer : RoomHub
 {
 
-    protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
+    protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
     {
-        var clone = new MemoryStream((int)content.Length);
-        await content.CopyToAsync(clone);
-        Console.WriteLine($"< {protocol.Verb}{protocol.Channel}{Encoding.UTF8.GetString(clone.ToArray())}");
-        clone.Seek(0, SeekOrigin.Begin);
-        await base.OnReceiveAsync(stream, protocol, clone, token);
+        var clone = new MemoryStream((int)message.Content.Length);
+        await message.Content.CopyToAsync(clone);
+        Console.WriteLine($"< {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
+        message.Content.Seek(0, SeekOrigin.Begin);
+        await base.OnReceiveAsync(stream, message, token);
     }
 
     protected override void OnStart()

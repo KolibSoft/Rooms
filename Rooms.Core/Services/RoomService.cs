@@ -20,7 +20,7 @@ namespace KolibSoft.Rooms.Core.Services
         protected IEnumerable<IRoomStream> Streams => _streams;
         protected bool IsDisposed => _disposed;
 
-        protected virtual ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token) => ValueTask.CompletedTask;
+        protected virtual ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token) => ValueTask.CompletedTask;
 
         public virtual async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
@@ -36,31 +36,16 @@ namespace KolibSoft.Rooms.Core.Services
                 stopwatch.Start();
                 while (_running && stream.IsAlive)
                 {
-                    var protocol = new RoomProtocol();
-                    await stream.ReadProtocolAsync(protocol, token);
-                    var count = (long)protocol.Count;
-                    var content = Stream.Null;
-                    if (count < Options.MaxFastBuffering)
-                    {
-                        content = new MemoryStream((int)count);
-                        await stream.ReadContentAsync(count, content, token);
-                    }
-                    else
-                    {
-                        var path = Path.Combine(Options.TempContentFolderPath, $"{DateTime.UtcNow.Ticks}");
-                        content = new FileStream(path, FileMode.Create, FileAccess.ReadWrite);
-                        await stream.ReadContentAsync(count, content, token);
-                    }
+                    var message = await stream.ReadMessageAsync(token);
                     if (stopwatch.Elapsed >= ttl)
                     {
                         rate = 0;
                         stopwatch.Restart();
                     }
-                    rate += count;
+                    rate += message.Content.Length;
                     if (rate > Options.MaxStreamRate)
                         await Task.Delay(TimeSpan.FromSeconds(rate / Options.MaxStreamRate));
-                    content.Seek(0, SeekOrigin.Begin);
-                    await OnReceiveAsync(stream, protocol, content, token);
+                    await OnReceiveAsync(stream, message, token);
                 }
             }
             catch (Exception error)
@@ -70,13 +55,12 @@ namespace KolibSoft.Rooms.Core.Services
             _streams = _streams.Remove(stream);
         }
 
-        protected virtual async ValueTask OnSendAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
+        protected virtual async ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
         {
-            await stream.WriteProtocolAsync(protocol, token);
-            await stream.WriteContentAsync((long)protocol.Count, content, token);
+            await stream.WriteMessageAsync(message, token);
         }
 
-        public virtual async ValueTask SendAsync(RoomProtocol protocol, Stream content, CancellationToken token = default)
+        public virtual async ValueTask SendAsync(RoomMessage message, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
@@ -86,7 +70,7 @@ namespace KolibSoft.Rooms.Core.Services
                 var stream = _streams.First();
                 try
                 {
-                    await OnSendAsync(stream, protocol, content, token);
+                    await OnSendAsync(stream, message, token);
                 }
                 catch (Exception error)
                 {
@@ -95,28 +79,12 @@ namespace KolibSoft.Rooms.Core.Services
             }
             else
             {
-                var count = (long)protocol.Count;
-                var clone = content;
-                if (!clone.CanSeek)
-                {
-                    if (count < Options.MaxFastBuffering)
-                    {
-                        clone = new MemoryStream((int)count);
-                        await content.CopyToAsync(clone, token);
-                    }
-                    else
-                    {
-                        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.InternetCache), "Content", $"{DateTime.UtcNow.Ticks}");
-                        clone = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
-                        await content.CopyToAsync(clone, token);
-                    }
-                }
                 foreach (var stream in _streams)
                 {
-                    clone.Seek(0, SeekOrigin.Begin);
+                    message.Content.Seek(0, SeekOrigin.Begin);
                     try
                     {
-                        await OnSendAsync(stream, protocol, content, token);
+                        await OnSendAsync(stream, message, token);
                     }
                     catch (Exception error)
                     {

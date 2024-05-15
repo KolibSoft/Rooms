@@ -66,7 +66,7 @@ namespace KolibSoft.Rooms.Core.Protocol
         public static explicit operator RoomCount(int number)
         {
             if (number < 0) throw new InvalidCastException("Negative values are not allowed");
-            var text = $"{number}\n";
+            var text = $"{number}";
             var count = new RoomCount(Encoding.UTF8.GetBytes(text));
             return count;
         }
@@ -74,14 +74,25 @@ namespace KolibSoft.Rooms.Core.Protocol
         public static explicit operator RoomCount(long number)
         {
             if (number < 0) throw new InvalidCastException("Negative values are not allowed");
-            var text = $"{number}\n";
+            var text = $"{number}";
             var count = new RoomCount(Encoding.UTF8.GetBytes(text));
             return count;
         }
 
+        public static explicit operator int(RoomCount count)
+        {
+            if (count.Length >= 1)
+            {
+                var text = Encoding.UTF8.GetString(count._data);
+                var number = int.Parse(text, NumberStyles.Integer, null);
+                return number;
+            }
+            throw new InvalidOperationException("Invalid internal data");
+        }
+
         public static explicit operator long(RoomCount count)
         {
-            if (count.Length >= 2)
+            if (count.Length >= 1)
             {
                 var text = Encoding.UTF8.GetString(count._data);
                 var number = long.Parse(text, NumberStyles.Integer, null);

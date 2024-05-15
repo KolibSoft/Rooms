@@ -1,9 +1,7 @@
 using System;
-using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using KolibSoft.Rooms.Core.Protocol;
 
 namespace KolibSoft.Rooms.Core.Streams
 {
