@@ -18,8 +18,6 @@ namespace KolibSoft.Rooms.Core.Services
             return ValueTask.CompletedTask;
         }
 
-        protected virtual ValueTask OnLoopbackAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token) => OnSendAsync(stream, protocol, content, token);
-
         private async void TransmitAsync()
         {
             while (IsRunning)
@@ -31,7 +29,7 @@ namespace KolibSoft.Rooms.Core.Services
                     if (channel == 0)
                         try
                         {
-                            await OnLoopbackAsync(message.Source, message.Protocol, message.Content, default);
+                            await OnSendAsync(message.Source, message.Protocol, message.Content, default);
                         }
                         catch (Exception error)
                         {
