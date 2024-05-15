@@ -14,7 +14,7 @@ namespace KolibSoft.Rooms.Core.Services
 
         protected override ValueTask OnReceiveAsync(IRoomStream stream, RoomProtocol protocol, Stream content, CancellationToken token)
         {
-            _messages = _messages.Enqueue(new RoomMessage(stream, protocol, content));
+            _messages = _messages.Enqueue(new RoomHubMessage(stream, protocol, content));
             return ValueTask.CompletedTask;
         }
 
@@ -24,7 +24,7 @@ namespace KolibSoft.Rooms.Core.Services
             {
                 if (_messages.Any())
                 {
-                    _messages = _messages.Dequeue(out RoomMessage message);
+                    _messages = _messages.Dequeue(out RoomHubMessage message);
                     var channel = (int)message.Protocol.Channel;
                     if (channel == 0)
                         try
@@ -94,7 +94,7 @@ namespace KolibSoft.Rooms.Core.Services
 
         public RoomHub(RoomServiceOptions? options = null) : base(options) { }
 
-        private ImmutableQueue<RoomMessage> _messages = ImmutableQueue.Create<RoomMessage>();
+        private ImmutableQueue<RoomHubMessage> _messages = ImmutableQueue.Create<RoomHubMessage>();
 
     }
 }
