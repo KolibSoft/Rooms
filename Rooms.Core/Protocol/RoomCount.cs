@@ -17,21 +17,15 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
-            if (data.Length < 2) return false;
+            if (data.Length < 1) return false;
             var index = data.Slice(0).ScanDigit();
-            if (index < 1) return false;
-            if (index < data.Length && DataUtils.IsBlank(data[index]))
-                index++;
             return index == data.Length;
         }
 
         public static bool Verify(ReadOnlySpan<char> data)
         {
-            if (data.Length < 2) return false;
+            if (data.Length < 1) return false;
             var index = data.Slice(0).ScanDigit();
-            if (index < 1) return false;
-            if (index < data.Length && DataUtils.IsBlank(data[index]))
-                index++;
             return index == data.Length;
         }
 
