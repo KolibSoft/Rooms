@@ -22,14 +22,11 @@ namespace KolibSoft.Rooms.Core.Services
 
         protected abstract ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token);
 
-        protected virtual ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token) => ValueTask.CompletedTask;
-
         public async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
             if (_streams.Contains(stream)) throw new InvalidOperationException("Stream already listening");
-            await OnHandshakeAsync(stream, token);
             _streams = _streams.Add(stream);
             try
             {

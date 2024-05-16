@@ -43,39 +43,42 @@ else if (mode == "Client")
     {
         var endpoint = await args.GetIPEndpointAsync("endpoint", new IPEndPoint(IPAddress.Loopback, 55000));
         Console.WriteLine($"Using endpoint: {endpoint}");
-        using var service = new RoomClient() { Logger = Console.Error };
-        service.Start();
-        using var client = new TcpClient();
-        await client.ConnectAsync(endpoint!);
-        using var stream = new RoomNetworkStream(client);
-        CommandAsync(service);
-        await service.ListenAsync(stream);
+        using var client = new RoomClient() { Logger = Console.Error };
+        client.Start();
+        using var _client = new TcpClient();
+        await _client.ConnectAsync(endpoint!);
+        using var stream = new RoomNetworkStream(_client);
+        await ClientHandshake(client, stream);
+        CommandAsync(client);
+        await client.ListenAsync(stream);
     }
     else if (impl == "WEB")
     {
         var uri = await args.GetUriAsync("uri", new Uri("ws://localhost:55000/"));
         Console.WriteLine($"Using uri: {uri}");
-        using var service = new RoomClient() { Logger = Console.Error };
-        service.Start();
-        using var client = new ClientWebSocket();
-        await client.ConnectAsync(uri!, default);
-        using var stream = new RoomWebStream(client);
-        CommandAsync(service);
-        await service.ListenAsync(stream);
+        using var client = new RoomClient() { Logger = Console.Error };
+        client.Start();
+        using var _client = new ClientWebSocket();
+        await _client.ConnectAsync(uri!, default);
+        using var stream = new RoomWebStream(_client);
+        await ClientHandshake(client, stream);
+        CommandAsync(client);
+        await client.ListenAsync(stream);
     }
 }
 
 return;
 
-static async Task ListenTcpAsync(IRoomService service, TcpListener listener)
+static async Task ListenTcpAsync(RoomServer server, TcpListener listener)
 {
     listener.Start();
-    while (service.IsRunning)
+    while (server.IsRunning)
         try
         {
             var client = await listener.AcceptTcpClientAsync();
             var stream = new RoomNetworkStream(client);
-            _ = service.ListenAsync(stream);
+            await ServerHandshake(server, stream);
+            _ = server.ListenAsync(stream);
         }
         catch (Exception error)
         {
@@ -84,23 +87,42 @@ static async Task ListenTcpAsync(IRoomService service, TcpListener listener)
     listener.Stop();
 }
 
-static async Task ListenWebAsync(IRoomService service, HttpListener listener)
+static async Task ListenWebAsync(RoomServer server, HttpListener listener)
 {
     listener.Start();
-    while (service.IsRunning)
+    while (server.IsRunning)
         try
         {
             var httpContext = await listener.GetContextAsync();
             var wsContext = await httpContext.AcceptWebSocketAsync(null);
             var socket = wsContext.WebSocket;
             var stream = new RoomWebStream(socket);
-            _ = service.ListenAsync(stream);
+            await ServerHandshake(server, stream);
+            _ = server.ListenAsync(stream);
         }
         catch (Exception error)
         {
             await Console.Error.WriteLineAsync($"Error listening connection: {error}");
         }
     listener.Stop();
+}
+
+static async Task ServerHandshake(RoomServer server, IRoomStream stream)
+{
+    await stream.WriteMessageAsync(new RoomMessage
+    {
+        Verb = "SERVICE_OPTIONS",
+        Channel = 0,
+        Content = await RoomContentUtils.CreateAsJsonAsync(server.Options),
+    });
+    Console.WriteLine("Service options sent");
+}
+
+static async Task ClientHandshake(RoomClient client, IRoomStream stream)
+{
+    var message = await stream.ReadMessageAsync();
+    using var file = await message.Content.ReadAsFileAsync("SERVICE_OPTIONS.json");
+    Console.WriteLine("Service options received");
 }
 
 async void CommandAsync(IRoomService service)
@@ -211,17 +233,6 @@ class RoomServer : RoomHub
         await base.OnReceiveAsync(stream, message, token);
     }
 
-    protected override async ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token)
-    {
-        await stream.WriteMessageAsync(new RoomMessage
-        {
-            Verb = "SERVICE_OPTIONS",
-            Channel = 0,
-            Content = await RoomContentUtils.CreateAsJsonAsync(Options, null, token),
-        }, token);
-        Console.WriteLine("Service options sent");
-    }
-
     protected override void OnStart()
     {
         base.OnStart();
@@ -244,13 +255,6 @@ class RoomClient : RoomService
     protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
     {
         Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {await message.Content.ReadAsTextAsync(null, token)}");
-    }
-
-    protected override async ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token)
-    {
-        var message = await stream.ReadMessageAsync(token);
-        var file = await message.Content.ReadAsFileAsync("SERVICE_OPTIONS.json");
-        Console.WriteLine("Service options received");
     }
 
     protected override void OnStart()
