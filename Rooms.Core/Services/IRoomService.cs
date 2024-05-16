@@ -10,7 +10,7 @@ namespace KolibSoft.Rooms.Core.Services
     {
         public bool IsRunning { get; }
         public ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default);
-        public void Send(int id, RoomMessage message);
+        public void Send(RoomMessage message);
         public void Start();
         public void Stop();
     }

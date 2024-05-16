@@ -209,6 +209,7 @@ namespace KolibSoft.Rooms.Core.Streams
             if (content.Length > Options.MaxContentLength) throw new IOException("Room content too large");
             var count = (RoomCount)content.Length;
             await WriteCountAsync(count, token);
+            content.Seek(0, SeekOrigin.Begin);
             var index = 0L;
             while (index < content.Length)
             {

@@ -22,11 +22,14 @@ namespace KolibSoft.Rooms.Core.Services
 
         protected abstract ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token);
 
+        protected virtual ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token) => ValueTask.CompletedTask;
+
         public async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
             if (_streams.Contains(stream)) throw new InvalidOperationException("Stream already listening");
+            await OnHandshakeAsync(stream, token);
             _streams = _streams.Add(stream);
             try
             {
@@ -57,17 +60,12 @@ namespace KolibSoft.Rooms.Core.Services
 
         protected virtual ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token) => stream.WriteMessageAsync(message, token);
 
-        public void Send(int id, RoomMessage message)
+        public void Send(RoomMessage message)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
             if (!_streams.Any()) return;
-            if (id == -1) Enqueue(null, message);
-            else
-            {
-                var stream = _streams.FirstOrDefault(x => x.GetHashCode() == id);
-                if (stream != null) Enqueue(stream, message);
-            }
+            Enqueue(null, message);
         }
 
         protected void Enqueue(IRoomStream? stream, RoomMessage message) => _messages = _messages.Enqueue(new MessageContext(stream, message));
@@ -82,7 +80,6 @@ namespace KolibSoft.Rooms.Core.Services
                         foreach (var stream in _streams)
                             try
                             {
-                                context.Message.Content.Seek(0, SeekOrigin.Begin);
                                 await OnSendAsync(stream, context.Message, default);
                             }
                             catch (Exception error)
@@ -91,7 +88,6 @@ namespace KolibSoft.Rooms.Core.Services
                             }
                     else try
                         {
-                            context.Message.Content.Seek(0, SeekOrigin.Begin);
                             await OnSendAsync(context.Stream, context.Message, default);
                         }
                         catch (Exception error)

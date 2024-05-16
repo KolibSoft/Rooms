@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using KolibSoft.Rooms.Core.Protocol;
 using KolibSoft.Rooms.Core.Services;
 using KolibSoft.Rooms.Core.Streams;
@@ -112,11 +113,11 @@ async void CommandAsync(IRoomService service)
             var parts = command!.Split(" ");
             var message = new RoomMessage
             {
-                Verb = parts[1],
-                Channel = int.Parse(parts[2]),
-                Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(3).ToArray())))
+                Verb = parts[0],
+                Channel = int.Parse(parts[1]),
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(2).ToArray())))
             };
-            service.Send(int.Parse(parts[0]), message);
+            service.Send(message);
         }
         catch (Exception error)
         {
@@ -208,6 +209,18 @@ class RoomServer : RoomHub
         Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
         message.Content.Seek(0, SeekOrigin.Begin);
         await base.OnReceiveAsync(stream, message, token);
+    }
+
+    protected override async ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token)
+    {
+        var content = new MemoryStream();
+        await JsonSerializer.SerializeAsync(content, Options, cancellationToken: token);
+        await stream.WriteMessageAsync(new RoomMessage
+        {
+            Verb = "SERVICE_OPTIONS",
+            Channel = 0,
+            Content = content,
+        }, token);
     }
 
     protected override void OnStart()
