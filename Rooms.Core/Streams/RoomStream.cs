@@ -228,7 +228,7 @@ namespace KolibSoft.Rooms.Core.Streams
         public async ValueTask WriteMessageAsync(RoomMessage message, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            var verb = await ReadVerbAsync(token);
+            var verb = RoomVerb.Parse(message.Verb);
             var channel = (RoomChannel)message.Channel;
             var content = message.Content;
             await WriteVerbAsync(verb, token);

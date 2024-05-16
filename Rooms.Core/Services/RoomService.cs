@@ -20,9 +20,9 @@ namespace KolibSoft.Rooms.Core.Services
         protected IEnumerable<IRoomStream> Streams => _streams;
         protected bool IsDisposed => _disposed;
 
-        protected virtual ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token) => ValueTask.CompletedTask;
+        protected abstract ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token);
 
-        public virtual async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
+        public async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
@@ -55,46 +55,55 @@ namespace KolibSoft.Rooms.Core.Services
             _streams = _streams.Remove(stream);
         }
 
-        protected virtual async ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
-        {
-            await stream.WriteMessageAsync(message, token);
-        }
+        protected virtual ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token) => stream.WriteMessageAsync(message, token);
 
-        public virtual async ValueTask SendAsync(int index, RoomMessage message, CancellationToken token = default)
+        public void Send(int id, RoomMessage message)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
-            if (_streams.Length == 0) return;
-            if (index == -1)
+            if (!_streams.Any()) return;
+            if (id == -1) Enqueue(null, message);
+            else
             {
-                foreach (var stream in _streams)
-                {
-                    message.Content.Seek(0, SeekOrigin.Begin);
-                    try
-                    {
-                        await OnSendAsync(stream, message, token);
-                    }
-                    catch (Exception error)
-                    {
-                        if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
-                    }
-                }
-            }
-            else if (index < _streams.Length)
-            {
-                var stream = _streams[index];
-                try
-                {
-                    await OnSendAsync(stream, message, token);
-                }
-                catch (Exception error)
-                {
-                    if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
-                }
+                var stream = _streams.FirstOrDefault(x => x.GetHashCode() == id);
+                if (stream != null) Enqueue(stream, message);
             }
         }
 
-        protected virtual void OnStart() { }
+        protected void Enqueue(IRoomStream? stream, RoomMessage message) => _messages = _messages.Enqueue(new MessageContext(stream, message));
+
+        private async void Transmit()
+        {
+            while (_running)
+                if (_messages.Any())
+                {
+                    _messages = _messages.Dequeue(out MessageContext context);
+                    if (context.Stream == null)
+                        foreach (var stream in _streams)
+                            try
+                            {
+                                context.Message.Content.Seek(0, SeekOrigin.Begin);
+                                await OnSendAsync(stream, context.Message, default);
+                            }
+                            catch (Exception error)
+                            {
+                                if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
+                            }
+                    else try
+                        {
+                            context.Message.Content.Seek(0, SeekOrigin.Begin);
+                            await OnSendAsync(context.Stream, context.Message, default);
+                        }
+                        catch (Exception error)
+                        {
+                            if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
+                        }
+
+                }
+                else await Task.Delay(100);
+        }
+
+        protected virtual void OnStart() => Transmit();
         public void Start()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
@@ -144,8 +153,23 @@ namespace KolibSoft.Rooms.Core.Services
         }
 
         private ImmutableArray<IRoomStream> _streams = ImmutableArray.Create<IRoomStream>();
+        private ImmutableQueue<MessageContext> _messages = ImmutableQueue.Create<MessageContext>();
         private bool _running = false;
         private bool _disposed = false;
+
+        private readonly struct MessageContext
+        {
+
+            public readonly IRoomStream? Stream;
+            public readonly RoomMessage Message;
+
+            public MessageContext(IRoomStream? stream, RoomMessage message)
+            {
+                Stream = stream;
+                Message = message;
+            }
+
+        }
 
     }
 }

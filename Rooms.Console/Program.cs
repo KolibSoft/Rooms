@@ -116,7 +116,7 @@ async void CommandAsync(IRoomService service)
                 Channel = int.Parse(parts[2]),
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(3).ToArray())))
             };
-            await service.SendAsync(int.Parse(parts[0]), message);
+            service.Send(int.Parse(parts[0]), message);
         }
         catch (Exception error)
         {
@@ -205,7 +205,7 @@ class RoomServer : RoomHub
     {
         var clone = new MemoryStream((int)message.Content.Length);
         await message.Content.CopyToAsync(clone);
-        Console.WriteLine($"< {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
+        Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
         message.Content.Seek(0, SeekOrigin.Begin);
         await base.OnReceiveAsync(stream, message, token);
     }
@@ -233,7 +233,7 @@ class RoomClient : RoomService
     {
         var clone = new MemoryStream((int)message.Content.Length);
         await message.Content.CopyToAsync(clone);
-        Console.WriteLine($"< {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
+        Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
     }
 
     protected override void OnStart()
