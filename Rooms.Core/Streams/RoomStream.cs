@@ -151,16 +151,24 @@ namespace KolibSoft.Rooms.Core.Streams
         public async ValueTask<RoomMessage> ReadMessageAsync(CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            var verb = await ReadVerbAsync(token);
-            var channel = await ReadChannelAsync(token);
-            var content = await ReadContentAsync(token);
-            var message = new RoomMessage
+            await _readSemaphore.WaitAsync(token);
+            try
             {
-                Verb = verb.ToString(),
-                Channel = (int)channel,
-                Content = content
-            };
-            return message;
+                var verb = await ReadVerbAsync(token);
+                var channel = await ReadChannelAsync(token);
+                var content = await ReadContentAsync(token);
+                var message = new RoomMessage
+                {
+                    Verb = verb.ToString(),
+                    Channel = (int)channel,
+                    Content = content
+                };
+                return message;
+            }
+            finally
+            {
+                _readSemaphore.Release();
+            }
         }
 
         protected abstract ValueTask<int> WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token);
@@ -228,12 +236,20 @@ namespace KolibSoft.Rooms.Core.Streams
         public async ValueTask WriteMessageAsync(RoomMessage message, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomStream));
-            var verb = RoomVerb.Parse(message.Verb);
-            var channel = (RoomChannel)message.Channel;
-            var content = message.Content;
-            await WriteVerbAsync(verb, token);
-            await WriteChannelAsync(channel, token);
-            await WriteContentAsync(content, token);
+            await _writeSemaphore.WaitAsync(token);
+            try
+            {
+                var verb = RoomVerb.Parse(message.Verb);
+                var channel = (RoomChannel)message.Channel;
+                var content = message.Content;
+                await WriteVerbAsync(verb, token);
+                await WriteChannelAsync(channel, token);
+                await WriteContentAsync(content, token);
+            }
+            finally
+            {
+                _writeSemaphore.Release();
+            }
         }
 
         protected virtual async ValueTask DisposeAsync(bool disposing)
@@ -241,7 +257,11 @@ namespace KolibSoft.Rooms.Core.Streams
             if (!_disposed)
             {
                 if (disposing)
+                {
                     await _data.DisposeAsync();
+                    _readSemaphore.Dispose();
+                    _writeSemaphore.Dispose();
+                }
                 _readBuffer = default;
                 _writeBuffer = default;
                 _disposed = true;
@@ -272,6 +292,8 @@ namespace KolibSoft.Rooms.Core.Streams
         private ArraySegment<byte> _writeBuffer = default;
         private int _position = 0;
         private int _length = 0;
+        private SemaphoreSlim _readSemaphore = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim _writeSemaphore = new SemaphoreSlim(1, 1);
         private bool _disposed = false;
 
         private static readonly byte[] Blank = Encoding.UTF8.GetBytes(" ");
