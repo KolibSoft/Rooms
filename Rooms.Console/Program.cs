@@ -112,11 +112,11 @@ async void CommandAsync(IRoomService service)
             var parts = command!.Split(" ");
             var message = new RoomMessage
             {
-                Verb = parts[0],
-                Channel = int.Parse(parts[1]),
-                Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(2).ToArray())))
+                Verb = parts[1],
+                Channel = int.Parse(parts[2]),
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(3).ToArray())))
             };
-            await service.SendAsync(message);
+            await service.SendAsync(int.Parse(parts[0]), message);
         }
         catch (Exception error)
         {

@@ -60,24 +60,12 @@ namespace KolibSoft.Rooms.Core.Services
             await stream.WriteMessageAsync(message, token);
         }
 
-        public virtual async ValueTask SendAsync(RoomMessage message, CancellationToken token = default)
+        public virtual async ValueTask SendAsync(int index, RoomMessage message, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
             if (_streams.Length == 0) return;
-            if (_streams.Length == 1)
-            {
-                var stream = _streams.First();
-                try
-                {
-                    await OnSendAsync(stream, message, token);
-                }
-                catch (Exception error)
-                {
-                    if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
-                }
-            }
-            else
+            if (index == -1)
             {
                 foreach (var stream in _streams)
                 {
@@ -90,6 +78,18 @@ namespace KolibSoft.Rooms.Core.Services
                     {
                         if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
                     }
+                }
+            }
+            else if (index < _streams.Length)
+            {
+                var stream = _streams[index];
+                try
+                {
+                    await OnSendAsync(stream, message, token);
+                }
+                catch (Exception error)
+                {
+                    if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
                 }
             }
         }

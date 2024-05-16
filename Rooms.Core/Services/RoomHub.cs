@@ -58,7 +58,6 @@ namespace KolibSoft.Rooms.Core.Services
                         var hash = context.Stream.GetHashCode() ^ channel;
                         var target = Streams.FirstOrDefault(x => x.GetHashCode() == hash);
                         if (target != null)
-                        {
                             try
                             {
                                 await OnSendAsync(target, context.Message, default);
@@ -67,7 +66,6 @@ namespace KolibSoft.Rooms.Core.Services
                             {
                                 if (Logger != null) await Logger.WriteLineAsync($"Error trasnmiting message: {error}");
                             }
-                        }
                     }
                 }
                 else await Task.Delay(100);
