@@ -221,6 +221,7 @@ class RoomServer : RoomHub
             Channel = 0,
             Content = content,
         }, token);
+        Console.WriteLine("Service options sent");
     }
 
     protected override void OnStart()
@@ -247,6 +248,13 @@ class RoomClient : RoomService
         var clone = new MemoryStream((int)message.Content.Length);
         await message.Content.CopyToAsync(clone);
         Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
+    }
+
+    protected override async ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token)
+    {
+        var message = await stream.ReadMessageAsync(token);
+        var options = await JsonSerializer.DeserializeAsync<RoomServiceOptions>(message.Content);
+        Console.WriteLine("Service options received");
     }
 
     protected override void OnStart()
