@@ -213,13 +213,11 @@ class RoomServer : RoomHub
 
     protected override async ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token)
     {
-        var content = new MemoryStream();
-        await JsonSerializer.SerializeAsync(content, Options, cancellationToken: token);
         await stream.WriteMessageAsync(new RoomMessage
         {
             Verb = "SERVICE_OPTIONS",
             Channel = 0,
-            Content = content,
+            Content = await RoomContentUtils.CreateAsJsonAsync(Options, null, token),
         }, token);
         Console.WriteLine("Service options sent");
     }
@@ -245,15 +243,13 @@ class RoomClient : RoomService
 
     protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
     {
-        var clone = new MemoryStream((int)message.Content.Length);
-        await message.Content.CopyToAsync(clone);
-        Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
+        Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {await message.Content.ReadAsTextAsync(null, token)}");
     }
 
     protected override async ValueTask OnHandshakeAsync(IRoomStream stream, CancellationToken token)
     {
         var message = await stream.ReadMessageAsync(token);
-        var options = await JsonSerializer.DeserializeAsync<RoomServiceOptions>(message.Content);
+        var file = await message.Content.ReadAsFileAsync("SERVICE_OPTIONS.json");
         Console.WriteLine("Service options received");
     }
 

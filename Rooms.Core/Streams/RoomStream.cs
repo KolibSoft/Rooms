@@ -37,9 +37,9 @@ namespace KolibSoft.Rooms.Core.Streams
             {
                 var chunk = await GetChunkAsync(token);
                 if (_length < 1) throw new IOException("Room verb broken");
-                var length = DataUtils.ScanWord(chunk.Span);
+                var length = RoomDataUtils.ScanWord(chunk.Span);
                 if (length < chunk.Length)
-                    length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
+                    length += (done = RoomDataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
                 if (_data.Length + length > Options.MaxVerbLength) throw new IOException("Room verb too large");
                 if (_position < _length || done)
@@ -69,11 +69,11 @@ namespace KolibSoft.Rooms.Core.Streams
             {
                 var chunk = await GetChunkAsync(token);
                 if (_length < 1) throw new IOException("Room channel broken");
-                var length = DataUtils.IsSign(chunk.Span[0]) ? 1 : 0;
+                var length = RoomDataUtils.IsSign(chunk.Span[0]) ? 1 : 0;
                 if (length < chunk.Length)
-                    length += DataUtils.ScanHexadecimal(chunk.Slice(length).Span);
+                    length += RoomDataUtils.ScanHexadecimal(chunk.Slice(length).Span);
                 if (length < chunk.Length)
-                    length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
+                    length += (done = RoomDataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
                 if (_data.Length + length > Options.MaxChannelLength) throw new IOException("Room channel too large");
                 if (_position < _length || done)
@@ -103,9 +103,9 @@ namespace KolibSoft.Rooms.Core.Streams
             {
                 var chunk = await GetChunkAsync(token);
                 if (_length < 1) throw new IOException("Room count broken");
-                var length = DataUtils.ScanDigit(chunk.Span);
+                var length = RoomDataUtils.ScanDigit(chunk.Span);
                 if (length < chunk.Length)
-                    length += (done = DataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
+                    length += (done = RoomDataUtils.IsBlank(chunk.Span[length])) ? 1 : 0;
                 _position += length;
                 if (_data.Length + length > Options.MaxCountLength) throw new IOException("Room count too large");
                 if (_position < _length || done)

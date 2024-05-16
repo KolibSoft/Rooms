@@ -17,14 +17,14 @@ namespace KolibSoft.Rooms.Core.Protocol
 
         public static bool Verify(ReadOnlySpan<byte> data)
         {
-            if (data.Length < 2 || !DataUtils.IsSign(data[0])) return false;
+            if (data.Length < 2 || !RoomDataUtils.IsSign(data[0])) return false;
             var index = data.Slice(1).ScanHexadecimal() + 1;
             return index == data.Length;
         }
 
         public static bool Verify(ReadOnlySpan<char> data)
         {
-            if (data.Length < 2 || !DataUtils.IsSign(data[0])) return false;
+            if (data.Length < 2 || !RoomDataUtils.IsSign(data[0])) return false;
             var index = data.Slice(1).ScanHexadecimal() + 1;
             return index == data.Length;
         }

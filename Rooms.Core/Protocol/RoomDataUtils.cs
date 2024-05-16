@@ -2,7 +2,7 @@ using System;
 
 namespace KolibSoft.Rooms.Core.Protocol
 {
-    public static class DataUtils
+    public static class RoomDataUtils
     {
 
         public static bool IsBlank(byte c) => c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
