@@ -23,7 +23,7 @@ namespace KolibSoft.Rooms.Core.Services
         public virtual async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
-            if (!_running) throw new InvalidOperationException("Service is stopped");
+            if (!_running) throw new InvalidOperationException("Service not running");
             try
             {
                 var ttl = TimeSpan.FromSeconds(1);
@@ -55,7 +55,7 @@ namespace KolibSoft.Rooms.Core.Services
         public virtual void Enqueue(IRoomStream stream, RoomMessage message)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
-            if (!_running) throw new InvalidOperationException("Service is stopped");
+            if (!_running) throw new InvalidOperationException("Service not running");
             _messages = _messages.Enqueue(new MessageContext(stream, message));
         }
 
