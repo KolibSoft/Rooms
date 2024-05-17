@@ -252,15 +252,9 @@ class RoomServer : RoomHub
     {
         var clone = new MemoryStream((int)message.Content.Length);
         await message.Content.CopyToAsync(clone);
-        Console.WriteLine($"[{message.Channel}] {message.Verb}: {Encoding.UTF8.GetString(clone.ToArray())}");
+        Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
         message.Content.Seek(0, SeekOrigin.Begin);
         await base.OnReceiveAsync(stream, message, token);
-    }
-
-    public void Send(RoomMessage message)
-    {
-        foreach (var stream in Streams)
-            Enqueue(stream, message);
     }
 
     protected override void OnStart()

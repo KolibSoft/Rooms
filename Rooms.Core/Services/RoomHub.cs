@@ -56,6 +56,25 @@ namespace KolibSoft.Rooms.Core.Services
             base.Enqueue(stream, message);
         }
 
+        public void Send(RoomMessage message)
+        {
+            if (message.Channel == -1)
+            {
+                message.Channel = 0;
+                foreach (var stream in Streams)
+                    Enqueue(stream, message);
+            }
+            else
+            {
+                var target = Streams.FirstOrDefault(x => x.GetHashCode() == message.Channel);
+                if (target != null)
+                {
+                    message.Channel = 0;
+                    Enqueue(target, message);
+                }
+            }
+        }
+
         public RoomHub(RoomServiceOptions? options = null) : base(options) { }
 
         private ImmutableArray<IRoomStream> _streams = ImmutableArray.Create<IRoomStream>();
