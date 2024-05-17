@@ -22,7 +22,7 @@ if (mode == "Server")
         using var service = new RoomServer() { Logger = Console.Error };
         service.Start();
         using var listener = new TcpListener(endpoint!);
-        CommandAsync(service);
+        CommandServer(service);
         await ListenTcpAsync(service, listener);
     }
     else if (impl == "WEB")
@@ -33,7 +33,7 @@ if (mode == "Server")
         service.Start();
         using var listener = new HttpListener();
         listener.Prefixes.Add(uri!.ToString());
-        CommandAsync(service);
+        CommandServer(service);
         await ListenWebAsync(service, listener);
     }
 }
@@ -49,7 +49,7 @@ else if (mode == "Client")
         await _client.ConnectAsync(endpoint!);
         using var stream = new RoomNetworkStream(_client);
         await ClientHandshake(client, stream);
-        CommandAsync(client);
+        CommandClient(client);
         await client.ListenAsync(stream);
     }
     else if (impl == "WEB")
@@ -62,7 +62,7 @@ else if (mode == "Client")
         await _client.ConnectAsync(uri!, default);
         using var stream = new RoomWebStream(_client);
         await ClientHandshake(client, stream);
-        CommandAsync(client);
+        CommandClient(client);
         await client.ListenAsync(stream);
     }
 }
@@ -125,9 +125,9 @@ static async Task ClientHandshake(RoomClient client, IRoomStream stream)
     Console.WriteLine("Service options received");
 }
 
-async void CommandAsync(IRoomService service)
+async void CommandServer(RoomServer server)
 {
-    while (service.IsRunning)
+    while (server.IsRunning)
     {
         var command = await Task.Run(() => Console.ReadLine());
         try
@@ -139,7 +139,31 @@ async void CommandAsync(IRoomService service)
                 Channel = int.Parse(parts[1]),
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(2).ToArray())))
             };
-            service.Send(message);
+            server.Send(message);
+        }
+        catch (Exception error)
+        {
+            await Console.Error.WriteLineAsync($"Error parsing command: {error}");
+        }
+        await Task.Delay(100);
+    }
+}
+
+async void CommandClient(RoomClient client)
+{
+    while (client.IsRunning)
+    {
+        var command = await Task.Run(() => Console.ReadLine());
+        try
+        {
+            var parts = command!.Split(" ");
+            var message = new RoomMessage
+            {
+                Verb = parts[0],
+                Channel = int.Parse(parts[1]),
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(string.Join(' ', parts.AsSpan().Slice(2).ToArray())))
+            };
+            client.Send(message);
         }
         catch (Exception error)
         {
@@ -228,9 +252,15 @@ class RoomServer : RoomHub
     {
         var clone = new MemoryStream((int)message.Content.Length);
         await message.Content.CopyToAsync(clone);
-        Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {Encoding.UTF8.GetString(clone.ToArray())}");
+        Console.WriteLine($"[{message.Channel}] {message.Verb}: {Encoding.UTF8.GetString(clone.ToArray())}");
         message.Content.Seek(0, SeekOrigin.Begin);
         await base.OnReceiveAsync(stream, message, token);
+    }
+
+    public void Send(RoomMessage message)
+    {
+        foreach (var stream in Streams)
+            Enqueue(stream, message);
     }
 
     protected override void OnStart()
@@ -254,7 +284,27 @@ class RoomClient : RoomService
 
     protected override async ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
     {
-        Console.WriteLine($"[{stream.GetHashCode()}] {message.Verb} {message.Channel} {await message.Content.ReadAsTextAsync(null, token)}");
+        Console.WriteLine($"[{message.Channel}] {message.Verb}: {await message.Content.ReadAsTextAsync(null, token)}");
+    }
+
+    public override async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
+    {
+        if (_stream != null) throw new InvalidOperationException("Stream already listening");
+        _stream = stream;
+        await base.ListenAsync(stream, token);
+        _stream = null;
+    }
+
+    public override void Enqueue(IRoomStream stream, RoomMessage message)
+    {
+        if (_stream != stream) throw new InvalidOperationException("Stream already listening");
+        base.Enqueue(stream, message);
+    }
+
+    public void Send(RoomMessage message)
+    {
+        if (_stream == null) throw new InvalidOperationException("Stream no listening");
+        Enqueue(_stream, message);
     }
 
     protected override void OnStart()
@@ -270,5 +320,7 @@ class RoomClient : RoomService
     }
 
     public RoomClient(RoomServiceOptions? options = null) : base(options) { }
+
+    private IRoomStream? _stream;
 
 }

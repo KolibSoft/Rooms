@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -17,17 +16,14 @@ namespace KolibSoft.Rooms.Core.Services
         public RoomServiceOptions Options { get; private set; }
         public TextWriter? Logger { get; set; }
         public bool IsRunning => _running;
-        protected IEnumerable<IRoomStream> Streams => _streams;
         protected bool IsDisposed => _disposed;
 
         protected abstract ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token);
 
-        public async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
+        public virtual async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
-            if (_streams.Contains(stream)) throw new InvalidOperationException("Stream already listening");
-            _streams = _streams.Add(stream);
             try
             {
                 var ttl = TimeSpan.FromSeconds(1);
@@ -52,20 +48,16 @@ namespace KolibSoft.Rooms.Core.Services
             {
                 if (Logger != null) await Logger.WriteLineAsync($"Error receiving message: {error}");
             }
-            _streams = _streams.Remove(stream);
         }
 
         protected virtual ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token) => stream.WriteMessageAsync(message, token);
 
-        public void Send(RoomMessage message)
+        public virtual void Enqueue(IRoomStream stream, RoomMessage message)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
             if (!_running) throw new InvalidOperationException("Service is stopped");
-            if (!_streams.Any()) return;
-            Enqueue(null, message);
+            _messages = _messages.Enqueue(new MessageContext(stream, message));
         }
-
-        protected void Enqueue(IRoomStream? stream, RoomMessage message) => _messages = _messages.Enqueue(new MessageContext(stream, message));
 
         private async void Transmit()
         {
@@ -73,25 +65,14 @@ namespace KolibSoft.Rooms.Core.Services
                 if (_messages.Any())
                 {
                     _messages = _messages.Dequeue(out MessageContext context);
-                    if (context.Stream == null)
-                        foreach (var stream in _streams)
-                            try
-                            {
-                                await OnSendAsync(stream, context.Message, default);
-                            }
-                            catch (Exception error)
-                            {
-                                if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
-                            }
-                    else try
-                        {
-                            await OnSendAsync(context.Stream, context.Message, default);
-                        }
-                        catch (Exception error)
-                        {
-                            if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
-                        }
-
+                    try
+                    {
+                        await OnSendAsync(context.Stream, context.Message, default);
+                    }
+                    catch (Exception error)
+                    {
+                        if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
+                    }
                 }
                 else await Task.Delay(100);
         }
@@ -145,7 +126,6 @@ namespace KolibSoft.Rooms.Core.Services
             Options = options ?? new RoomServiceOptions();
         }
 
-        private ImmutableArray<IRoomStream> _streams = ImmutableArray.Create<IRoomStream>();
         private ImmutableQueue<MessageContext> _messages = ImmutableQueue.Create<MessageContext>();
         private bool _running = false;
         private bool _disposed = false;
@@ -153,10 +133,10 @@ namespace KolibSoft.Rooms.Core.Services
         private readonly struct MessageContext
         {
 
-            public readonly IRoomStream? Stream;
+            public readonly IRoomStream Stream;
             public readonly RoomMessage Message;
 
-            public MessageContext(IRoomStream? stream, RoomMessage message)
+            public MessageContext(IRoomStream stream, RoomMessage message)
             {
                 Stream = stream;
                 Message = message;

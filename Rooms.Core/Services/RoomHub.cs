@@ -1,4 +1,6 @@
-using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +12,8 @@ namespace KolibSoft.Rooms.Core.Services
     public class RoomHub : RoomService
     {
 
+        protected IEnumerable<IRoomStream> Streams => _streams;
+
         protected override ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
         {
             var channel = message.Channel;
@@ -17,7 +21,7 @@ namespace KolibSoft.Rooms.Core.Services
             else if (channel == -1)
             {
                 var hash = stream.GetHashCode();
-                foreach (var _stream in Streams)
+                foreach (var _stream in _streams)
                     if (_stream != stream)
                     {
                         message = new RoomMessage
@@ -32,13 +36,29 @@ namespace KolibSoft.Rooms.Core.Services
             else
             {
                 var hash = stream.GetHashCode() ^ channel;
-                var _stream = Streams.FirstOrDefault(x => x.GetHashCode() == hash);
+                var _stream = _streams.FirstOrDefault(x => x.GetHashCode() == hash);
                 if (_stream != null) Enqueue(_stream, message);
             }
             return ValueTask.CompletedTask;
         }
 
+        public override async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
+        {
+            if (_streams.Contains(stream)) throw new InvalidOperationException("Stream already listening");
+            _streams = _streams.Add(stream);
+            await base.ListenAsync(stream, token);
+            _streams = _streams.Remove(stream);
+        }
+
+        public override void Enqueue(IRoomStream stream, RoomMessage message)
+        {
+            if (!_streams.Contains(stream)) throw new InvalidOperationException("Stream not listening");
+            base.Enqueue(stream, message);
+        }
+
         public RoomHub(RoomServiceOptions? options = null) : base(options) { }
+
+        private ImmutableArray<IRoomStream> _streams = ImmutableArray.Create<IRoomStream>();
 
     }
 }
