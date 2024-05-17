@@ -257,6 +257,25 @@ class RoomServer : RoomHub
         await base.OnReceiveAsync(stream, message, token);
     }
 
+    public void Send(RoomMessage message)
+    {
+        if (message.Channel == -1)
+        {
+            message.Channel = 0;
+            foreach (var stream in Streams)
+                Enqueue(stream, message);
+        }
+        else
+        {
+            var target = Streams.FirstOrDefault(x => x.GetHashCode() == message.Channel);
+            if (target != null)
+            {
+                message.Channel = 0;
+                Enqueue(target, message);
+            }
+        }
+    }
+
     protected override void OnStart()
     {
         base.OnStart();
