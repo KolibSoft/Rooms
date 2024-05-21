@@ -44,19 +44,11 @@ input {
     border-radius: 0.25em;
 }
 
-#iCode {
+#iName {
     width: 8ch;
 }
 
 #iSlots {
-    width: 8ch;
-}
-
-#iBuff {
-    width: 12ch;
-}
-
-#iRate {
     width: 8ch;
 }
 

@@ -25,7 +25,7 @@ app.Run();
 public class RoomsController : ControllerBase
 {
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index([FromQuery] string? hint = null)
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
@@ -89,14 +89,29 @@ public class RoomsController : ControllerBase
             var dump = Rooms.Where(x => x.Count == 0);
             foreach (var room in dump) room.Hub.Stop();
             Rooms = Rooms.RemoveRange(dump);
-            return Ok(Rooms.Select(x => new
+            if (string.IsNullOrWhiteSpace(hint))
             {
-                Name = x.Info.Name,
-                Tag = x.Info.Tag,
-                HasPassword = x.Info.Password != null,
-                Slots = x.Info.Slots,
-                Count = x.Count
-            }));
+                return Ok(Rooms.Select(x => new
+                {
+                    Name = x.Info.Name,
+                    Tag = x.Info.Tag,
+                    HasPassword = x.Info.Password != null,
+                    Slots = x.Info.Slots,
+                    Count = x.Count
+                }).OrderBy(x => x.Name));
+            }
+            else
+            {
+                hint = hint.ToUpper();
+                return Ok(Rooms.Where(x => x.Info.Name.ToUpper().Contains(hint)).Select(x => new
+                {
+                    Name = x.Info.Name,
+                    Tag = x.Info.Tag,
+                    HasPassword = x.Info.Password != null,
+                    Slots = x.Info.Slots,
+                    Count = x.Count
+                }).OrderBy(x => x.Name));
+            }
         }
     }
 
