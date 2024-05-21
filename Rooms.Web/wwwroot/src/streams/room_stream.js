@@ -132,7 +132,7 @@ class RoomStream {
             index += length;
             this.#position += length;
         }
-        return content;
+        return new Uint8Array(content);
     }
 
     async readMessageAsync() {
@@ -187,6 +187,7 @@ class RoomStream {
     }
 
     async #writeContentAsync(content) {
+        if (!(content instanceof Uint8Array)) throw new Error("Invalid argument");
         if (content.length > this.#options.maxContentLength) throw new Error("Room content too large");
         let count = new RoomCount(content.length);
         await this.#writeCountAsync(count);
