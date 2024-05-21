@@ -28,7 +28,7 @@ namespace KolibSoft.Rooms.Core.Streams
         }
 
         public RoomNetworkStream(TcpClient client, ArraySegment<byte> readBuffer, ArraySegment<byte> writeBuffer, RoomStreamOptions? options = null) : base(readBuffer, writeBuffer, options) => Client = client;
-        public RoomNetworkStream(TcpClient client, int readBuffering = 1024, int writeBuffering = 1024, RoomStreamOptions? options = null) : this(client, new byte[readBuffering], new byte[writeBuffering], options) { }
+        public RoomNetworkStream(TcpClient client, RoomStreamOptions? options = null) : base(options) => Client = client;
 
     }
 }

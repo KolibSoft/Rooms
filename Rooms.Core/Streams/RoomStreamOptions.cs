@@ -6,6 +6,8 @@ namespace KolibSoft.Rooms.Core.Streams
     public sealed class RoomStreamOptions
     {
 
+        public int ReadBuffering { get; set; } = DefaultReadBuffering;
+        public int WriteBuffering { get; set; } = DefaultWriteBuffering;
         public int MaxVerbLength { get; set; } = DefaultMaxVerbLength;
         public int MaxChannelLength { get; set; } = DefaultMaxChannelLength;
         public int MaxCountLength { get; set; } = DefaultMaxCountLength;
@@ -21,6 +23,8 @@ namespace KolibSoft.Rooms.Core.Streams
             return new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
         }
 
+        public const int DefaultReadBuffering = 1024;
+        public const int DefaultWriteBuffering = 1024;
         public const int DefaultMaxVerbLength = 128;
         public const int DefaultMaxChannelLength = 32;
         public const int DefaultMaxCountLength = 32;

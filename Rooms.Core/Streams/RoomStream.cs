@@ -268,6 +268,13 @@ namespace KolibSoft.Rooms.Core.Streams
             Options = options ?? new RoomStreamOptions();
         }
 
+        protected RoomStream(RoomStreamOptions? options = null)
+        {
+            Options = options ?? new RoomStreamOptions();
+            _readBuffer = new byte[Options.ReadBuffering];
+            _writeBuffer = new byte[Options.WriteBuffering];
+        }
+
         private MemoryStream _data = new MemoryStream();
         private ArraySegment<byte> _readBuffer = default;
         private ArraySegment<byte> _writeBuffer = default;

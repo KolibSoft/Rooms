@@ -11,30 +11,37 @@ using KolibSoft.Rooms.Core.Streams;
 
 var mode = await args.GetOptionAsync("mode", ["Server", "Client"]);
 var impl = await args.GetOptionAsync("impl", ["TCP", "WEB"]);
-var buffering = await args.GetIntegerAsync("buff", 1024);
-var rating = await args.GetIntegerAsync("rate", 1024);
+var path = await args.GetArgumentAsync("settings", "settings.json");
+
+Settings? settings = null;
+if (File.Exists(path))
+{
+    var json = await File.ReadAllTextAsync(path);
+    settings = JsonSerializer.Deserialize<Settings>(json);
+}
+
 if (mode == "Server")
 {
     if (impl == "TCP")
     {
         var endpoint = await args.GetIPEndpointAsync("endpoint", new IPEndPoint(IPAddress.Any, 55000));
         Console.WriteLine($"Using endpoint: {endpoint}");
-        using var service = new RoomServer() { Logger = Console.Error };
-        service.Start();
+        using var server = new RoomServer(settings?.ServiceOptions) { Logger = Console.Error };
+        server.Start();
         using var listener = new TcpListener(endpoint!);
-        CommandServer(service);
-        await ListenTcpAsync(service, listener);
+        CommandServer(server);
+        await ListenTcpAsync(server, listener, settings);
     }
     else if (impl == "WEB")
     {
         var uri = await args.GetUriAsync("uri", new Uri("http://localhost:55000/"));
         Console.WriteLine($"Using uri: {uri}");
-        using var service = new RoomServer() { Logger = Console.Error };
-        service.Start();
+        using var server = new RoomServer(settings?.ServiceOptions) { Logger = Console.Error };
+        server.Start();
         using var listener = new HttpListener();
         listener.Prefixes.Add(uri!.ToString());
-        CommandServer(service);
-        await ListenWebAsync(service, listener);
+        CommandServer(server);
+        await ListenWebAsync(server, listener, settings);
     }
 }
 else if (mode == "Client")
@@ -43,12 +50,12 @@ else if (mode == "Client")
     {
         var endpoint = await args.GetIPEndpointAsync("endpoint", new IPEndPoint(IPAddress.Loopback, 55000));
         Console.WriteLine($"Using endpoint: {endpoint}");
-        using var client = new RoomClient() { Logger = Console.Error };
+        using var client = new RoomClient(settings?.ServiceOptions) { Logger = Console.Error };
         client.Start();
         using var _client = new TcpClient();
         await _client.ConnectAsync(endpoint!);
-        using var stream = new RoomNetworkStream(_client);
-        await ClientHandshake(client, stream);
+        using var stream = new RoomNetworkStream(_client, settings?.StreamOptions);
+        await ClientHandshake(client, stream, settings?.ConnectionOptions);
         CommandClient(client);
         await client.ListenAsync(stream);
     }
@@ -56,12 +63,12 @@ else if (mode == "Client")
     {
         var uri = await args.GetUriAsync("uri", new Uri("ws://localhost:55000/"));
         Console.WriteLine($"Using uri: {uri}");
-        using var client = new RoomClient() { Logger = Console.Error };
+        using var client = new RoomClient(settings?.ServiceOptions) { Logger = Console.Error };
         client.Start();
         using var _client = new ClientWebSocket();
         await _client.ConnectAsync(uri!, default);
-        using var stream = new RoomWebStream(_client);
-        await ClientHandshake(client, stream);
+        using var stream = new RoomWebStream(_client, settings?.StreamOptions);
+        await ClientHandshake(client, stream, settings?.ConnectionOptions);
         CommandClient(client);
         await client.ListenAsync(stream);
     }
@@ -69,15 +76,15 @@ else if (mode == "Client")
 
 return;
 
-static async Task ListenTcpAsync(RoomServer server, TcpListener listener)
+static async Task ListenTcpAsync(RoomServer server, TcpListener listener, Settings? settings = null)
 {
     listener.Start();
     while (server.IsRunning)
         try
         {
             var client = await listener.AcceptTcpClientAsync();
-            var stream = new RoomNetworkStream(client);
-            await ServerHandshake(server, stream);
+            var stream = new RoomNetworkStream(client, settings?.StreamOptions);
+            await ServerHandshake(server, stream, settings?.ConnectionOptions);
             _ = server.ListenAsync(stream);
         }
         catch (Exception error)
@@ -87,7 +94,7 @@ static async Task ListenTcpAsync(RoomServer server, TcpListener listener)
     listener.Stop();
 }
 
-static async Task ListenWebAsync(RoomServer server, HttpListener listener)
+static async Task ListenWebAsync(RoomServer server, HttpListener listener, Settings? settings = null)
 {
     listener.Start();
     while (server.IsRunning)
@@ -96,8 +103,8 @@ static async Task ListenWebAsync(RoomServer server, HttpListener listener)
             var httpContext = await listener.GetContextAsync();
             var wsContext = await httpContext.AcceptWebSocketAsync(null);
             var socket = wsContext.WebSocket;
-            var stream = new RoomWebStream(socket);
-            await ServerHandshake(server, stream);
+            var stream = new RoomWebStream(socket, settings?.StreamOptions);
+            await ServerHandshake(server, stream, settings?.ConnectionOptions);
             _ = server.ListenAsync(stream);
         }
         catch (Exception error)
@@ -107,22 +114,44 @@ static async Task ListenWebAsync(RoomServer server, HttpListener listener)
     listener.Stop();
 }
 
-static async Task ServerHandshake(RoomServer server, IRoomStream stream)
+static async Task ServerHandshake(RoomServer server, IRoomStream stream, ConnectionOptions? options = null)
 {
+    Console.WriteLine($"[{stream.GetHashCode()}] Configuring connection");
+    var message = await stream.ReadMessageAsync();
+    if (message.Verb != "OPTIONS")
+    {
+        await stream.WriteMessageAsync(new RoomMessage
+        {
+            Verb = "INFO",
+            Content = await RoomContentUtils.CreateAsTextAsync("Stream Options Required")
+        });
+        throw new InvalidOperationException("Stream Options Required");
+    }
+    var _options = await message.Content.ReadAsJsonAsync<ConnectionOptions>();
     await stream.WriteMessageAsync(new RoomMessage
     {
-        Verb = "SERVICE_OPTIONS",
-        Channel = 0,
-        Content = await RoomContentUtils.CreateAsJsonAsync(server.Options),
+        Verb = "OPTIONS",
+        Content = await RoomContentUtils.CreateAsJsonAsync(_options)
     });
-    Console.WriteLine("Service options sent");
+    Console.WriteLine($"[{stream.GetHashCode()}] Connection configured");
 }
 
-static async Task ClientHandshake(RoomClient client, IRoomStream stream)
+static async Task ClientHandshake(RoomClient client, IRoomStream stream, ConnectionOptions? options = null)
 {
+    Console.WriteLine($"Configuring connection");
+    await stream.WriteMessageAsync(new RoomMessage
+    {
+        Verb = "OPTIONS",
+        Content = await RoomContentUtils.CreateAsJsonAsync(options)
+    });
     var message = await stream.ReadMessageAsync();
-    using var file = await message.Content.ReadAsFileAsync("SERVICE_OPTIONS.json");
-    Console.WriteLine("Service options received");
+    if (message.Verb != "OPTIONS")
+    {
+        Console.WriteLine($"[{message.Channel}] {message.Verb}: {await message.Content.ReadAsTextAsync()}");
+        throw new InvalidOperationException("Stream Options Required");
+    }
+    var _options = await message.Content.ReadAsJsonAsync<ConnectionOptions>();
+    Console.WriteLine($"Connection configured");
 }
 
 async void CommandServer(RoomServer server)
@@ -336,4 +365,16 @@ class RoomClient : RoomService
 
     private IRoomStream? _stream;
 
+}
+
+public class ConnectionOptions
+{
+
+}
+
+public class Settings
+{
+    public RoomStreamOptions? StreamOptions { get; set; }
+    public RoomServiceOptions? ServiceOptions { get; set; }
+    public ConnectionOptions? ConnectionOptions { get; set; }
 }
