@@ -1,9 +1,9 @@
-import { RoomChannel } from "../protocol/room_channel";
-import { RoomCount } from "../protocol/room_count";
-import { RoomDataUtils, encoder } from "../protocol/room_data_utils";
-import { RoomMessage } from "../protocol/room_message";
-import { RoomVerb } from "../protocol/room_verb";
-import { RoomStreamOptions } from "./room_stream_options";
+import { RoomChannel } from "../protocol/room_channel.js";
+import { RoomCount } from "../protocol/room_count.js";
+import { RoomDataUtils, encoder } from "../protocol/room_data_utils.js";
+import { RoomMessage } from "../protocol/room_message.js";
+import { RoomVerb } from "../protocol/room_verb.js";
+import { RoomStreamOptions } from "./room_stream_options.js";
 
 const BLANK = encoder.encode(" ");
 
@@ -52,7 +52,7 @@ class RoomStream {
                     return verb;
                 }
                 if (length > 0) {
-                    let verb = new RoomVerb(new Uint8Array(this.#data.slice(0, length - 1)));
+                    let verb = new RoomVerb(new Uint8Array(chunk.slice(0, length - 1)));
                     return verb;
                 }
                 return new RoomVerb();
@@ -68,7 +68,7 @@ class RoomStream {
             let chunk = await this.#getChunkAsync();
             if (this.#length < 1) throw new Error("Room channel broken");
             let length = RoomDataUtils.isSign(chunk[0]) ? 1 : 0;
-            if (length < chunk.lastIndexOf)
+            if (length < chunk.length)
                 length += RoomDataUtils.scanHexadecimal(RoomDataUtils.slice(chunk, length));
             if (length < chunk.length)
                 length += (done = RoomDataUtils.isBlank(chunk[length])) ? 1 : 0;
@@ -81,7 +81,7 @@ class RoomStream {
                     return channel;
                 }
                 if (length > 0) {
-                    let channel = new RoomChannel(new Uint8Array(this.#data.slice(0, length - 1)));
+                    let channel = new RoomChannel(new Uint8Array(chunk.slice(0, length - 1)));
                     return channel;
                 }
                 return new RoomChannel();
@@ -108,7 +108,7 @@ class RoomStream {
                     return count;
                 }
                 if (length > 0) {
-                    let count = new RoomCount(new Uint8Array(this.#data.slice(0, length - 1)));
+                    let count = new RoomCount(new Uint8Array(chunk.slice(0, length - 1)));
                     return count;
                 }
                 return new RoomCount();
@@ -140,7 +140,11 @@ class RoomStream {
         let verb = await this.#readVerbAsync();
         let channel = await this.#readChannelAsync();
         let content = await this.#readContentAsync();
-        let message = new RoomMessage({ verb, channel, content });
+        let message = new RoomMessage({
+            verb: verb.toString(),
+            channel: parseInt(channel, 16),
+            content
+        });
         return message;
     }
 
@@ -187,7 +191,7 @@ class RoomStream {
         let count = new RoomCount(content.length);
         await this.#writeCountAsync(count);
         let index = 0;
-        while (index < 0) {
+        while (index < content.length) {
             this.#writeBuffer.set(content);
             let _count = content.length;
             let slice = RoomDataUtils.slice(this.#writeBuffer, 0, _count);
@@ -202,10 +206,10 @@ class RoomStream {
     }
 
     async writeMessageAsync(message) {
-        if (!(count instanceof RoomMessage)) throw new Error("Invalid argument");
+        if (!(message instanceof RoomMessage)) throw new Error("Invalid argument");
         if (this.#disposed) throw new Error("RoomStream disposed");
         let verb = RoomVerb.parse(message.verb);
-        let channel = new RoomVerb(message.channel);
+        let channel = new RoomChannel(message.channel);
         let content = message.content;
         await this.#writeVerbAsync(verb);
         await this.#writeChannelAsync(channel);
@@ -215,7 +219,7 @@ class RoomStream {
     async onDisposeAsync(disposing) {
         if (!this.#disposed) {
             if (disposing)
-                _data = null;
+                _data.length = 0;
             this.#readBuffer = null;
             this.#writeBuffer = null;
             this.#disposed = true;
@@ -226,7 +230,7 @@ class RoomStream {
     async disposeAsync() { await this.onDisposeAsync(true); }
 
     constructor() {
-        if (arguments.length = 3) {
+        if (arguments.length == 3) {
             if (!(arguments[0] instanceof Uint8Array) || !(arguments[1] instanceof Uint8Array))
                 throw new Error("Invalid arguments");
             this.#readBuffer = arguments[0];
