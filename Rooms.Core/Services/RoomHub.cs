@@ -12,6 +12,7 @@ namespace KolibSoft.Rooms.Core.Services
     public class RoomHub : RoomService
     {
 
+        public int Count => _streams.Length;
         protected IEnumerable<IRoomStream> Streams => _streams;
 
         protected override ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
