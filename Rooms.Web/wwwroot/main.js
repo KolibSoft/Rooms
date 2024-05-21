@@ -1,8 +1,8 @@
-import {  } from "./rooms.js";
+import { RoomMessage, RoomWebStream, decoder, encoder } from "./rooms.js";
 
 const isSecure = location.protocol.startsWith("https");
-const service = new RoomService();
-service.logger = message => console.log(message);
+// const service = new RoomService();
+// service.logger = message => console.log(message);
 
 let rooms = [];
 let hint = "";
@@ -100,9 +100,22 @@ iCommand.onkeyup = async function (event) {
 
 const iJoin = document.getElementById("iJoin");
 iJoin.onclick = async function () {
-    await service.disconnectAsync();
+    // await service.disconnectAsync();
     let url = new URL(server);
     url.protocol = isSecure ? "wss" : "ws";
+
+    let socket = new WebSocket(url);
+    socket.onerror = event => console.log(event);
+    socket.onopen = async event => {
+        let stream = new RoomWebStream({ socket });
+        await stream.writeMessageAsync(new RoomMessage({
+            verb: "OPTIONS",
+            content: encoder.encode("{}")
+        }));
+        var message = await stream.readMessageAsync();
+        console.log(message);
+        console.log(decoder.decode(message.content));
+    }
 
 };
 

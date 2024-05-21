@@ -229,18 +229,12 @@ class RoomStream {
     dispose() { _ = this.onDisposeAsync(true); }
     async disposeAsync() { await this.onDisposeAsync(true); }
 
-    constructor() {
-        if (arguments.length == 3) {
-            if (!(arguments[0] instanceof Uint8Array) || !(arguments[1] instanceof Uint8Array))
-                throw new Error("Invalid arguments");
-            this.#readBuffer = arguments[0];
-            this.#writeBuffer = arguments[1];
-            this.#options = new RoomStreamOptions(arguments[2]);
-        } else {
-            this.#options = new RoomStreamOptions(arguments[0]);
-            this.#readBuffer = new Uint8Array(this.#options.readBuffering);
-            this.#writeBuffer = new Uint8Array(this.#options.writeBuffering);
-        }
+    constructor(args = { readBuffer: null, writeBuffer: null, options: null }) {
+        if (args?.readBuffer && !(args.readBuffer instanceof Uint8Array) || args?.writeBuffer && !(args.writeBuffer instanceof Uint8Array))
+            throw new Error("Invalid arguments");
+        this.#options = new RoomStreamOptions(args?.options);
+        this.#readBuffer = args?.readBuffer ?? new Uint8Array(this.#options.readBuffering);
+        this.#writeBuffer = args?.writeBuffer ?? new Uint8Array(this.#options.writeBuffering);
         this.#data = [];
         this.#position = 0;
         this.#length = 0;
