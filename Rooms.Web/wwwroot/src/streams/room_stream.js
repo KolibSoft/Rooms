@@ -1,4 +1,11 @@
+import { RoomChannel } from "../protocol/room_channel";
+import { RoomCount } from "../protocol/room_count";
+import { RoomDataUtils, encoder } from "../protocol/room_data_utils";
+import { RoomMessage } from "../protocol/room_message";
+import { RoomVerb } from "../protocol/room_verb";
 import { RoomStreamOptions } from "./room_stream_options";
+
+const BLANK = encoder.encode(" ");
 
 class RoomStream {
 
@@ -15,12 +22,127 @@ class RoomStream {
     get isDisposed() { return this.#disposed; }
 
     async readAsync(chunk) { throw Error("Abstract member"); }
-    async #getChunkAsync() { }
-    async #readVerbAsync() { }
-    async #readChannelAsync() { }
-    async #readCountAsync() { }
-    async #readContentAsync() { }
-    async readMessageAsync() { }
+
+    async #getChunkAsync() {
+        if (this.#position == this.#length) {
+            this.#position = 0;
+            this.#length = await this.readAsync(this.#readBuffer);
+            if (this.#length < 1)
+                return new Uint8Array(0);
+        }
+        let slice = RoomDataUtils.slice(this.#readBuffer, this.#position, this.#length - this.#position);
+        return slice;
+    }
+
+    async #readVerbAsync() {
+        this.#data.length = 0;
+        let done = false;
+        while (true) {
+            let chunk = await this.#getChunkAsync();
+            if (this.#length < 1) throw new Error("Room verb broken");
+            let length = RoomDataUtils.scanWord(chunk);
+            if (length < chunk.length)
+                length += (done = RoomDataUtils.isBlank(chunk[length])) ? 1 : 0;
+            this.#position += length;
+            if (this.#data.length + length > this.#options.maxVerbLength) throw new Error("Room verb too large");
+            if (this.#position < length || done) {
+                if (this.#data.length > 0) {
+                    this.#data.push(...RoomDataUtils.slice(chunk, 0, length - 1));
+                    let verb = new RoomVerb(new Uint8Array(this.#data));
+                    return verb;
+                }
+                if (length > 0) {
+                    let verb = new RoomVerb(new Uint8Array(this.#data.slice(0, length - 1)));
+                    return verb;
+                }
+                return new RoomVerb();
+            }
+            this.#data.push(...chunk);
+        }
+    }
+
+    async #readChannelAsync() {
+        this.#data.length = 0;
+        let done = false;
+        while (true) {
+            let chunk = await this.#getChunkAsync();
+            if (this.#length < 1) throw new Error("Room channel broken");
+            let length = RoomDataUtils.isSign(chunk[0]) ? 1 : 0;
+            if (length < chunk.lastIndexOf)
+                length += RoomDataUtils.scanHexadecimal(RoomDataUtils.slice(chunk, length));
+            if (length < chunk.length)
+                length += (done = RoomDataUtils.isBlank(chunk[length])) ? 1 : 0;
+            this.#position += length;
+            if (this.#data.length + length > this.#options.maxChannelLength) throw new Error("Room channel too large");
+            if (this.#position < length || done) {
+                if (this.#data.length > 0) {
+                    this.#data.push(...RoomDataUtils.slice(chunk, 0, length - 1));
+                    let channel = new RoomChannel(new Uint8Array(this.#data));
+                    return channel;
+                }
+                if (length > 0) {
+                    let channel = new RoomChannel(new Uint8Array(this.#data.slice(0, length - 1)));
+                    return channel;
+                }
+                return new RoomChannel();
+            }
+            this.#data.push(...chunk);
+        }
+    }
+
+    async #readCountAsync() {
+        this.#data.length = 0;
+        let done = false;
+        while (true) {
+            let chunk = await this.#getChunkAsync();
+            if (this.#length < 1) throw new Error("Room count broken");
+            let length = RoomDataUtils.scanDigit(chunk);
+            if (length < chunk.length)
+                length += (done = RoomDataUtils.isBlank(chunk[length])) ? 1 : 0;
+            this.#position += length;
+            if (this.#data.length + length > this.#options.maxCountLength) throw new Error("Room count too large");
+            if (this.#position < length || done) {
+                if (this.#data.length > 0) {
+                    this.#data.push(...RoomDataUtils.slice(chunk, 0, length - 1));
+                    let count = new RoomCount(new Uint8Array(this.#data));
+                    return count;
+                }
+                if (length > 0) {
+                    let count = new RoomCount(new Uint8Array(this.#data.slice(0, length - 1)));
+                    return count;
+                }
+                return new RoomCount();
+            }
+            this.#data.push(...chunk);
+        }
+    }
+
+    async #readContentAsync() {
+        let count = await this.#readCountAsync();
+        let _count = parseInt(count);
+        if (_count == 0) return {};
+        if (_count > this.#options.maxContentLength) throw new Error("Room content too large");
+        let content = [];
+        let index = 0;
+        while (index < _count) {
+            let chunk = await this.#getChunkAsync();
+            if (this.#length < 1) throw new Error("Room content broken");
+            let length = Math.min(chunk.length, _count - index);
+            content.push(...RoomDataUtils.slice(chunk, 0, length));
+            index += length;
+            this.#position += length;
+        }
+        return content;
+    }
+
+    async readMessageAsync() {
+        if (this.#disposed) throw new Error("RoomStream disposed");
+        let verb = await this.#readVerbAsync();
+        let channel = await this.#readChannelAsync();
+        let content = await this.#readContentAsync();
+        let message = new RoomMessage({ verb, channel, content });
+        return message;
+    }
 
     async writeAsync(chunk) { throw Error("Abstract member"); }
     async #writeVerbAsync(verb) { }
@@ -54,8 +176,11 @@ class RoomStream {
             this.#readBuffer = new Uint8Array(this.#options.readBuffering);
             this.#writeBuffer = new Uint8Array(this.#options.writeBuffering);
         }
+        this.#data = [];
+        this.#position = 0;
+        this.#length = 0;
+        this.#disposed = false;
     }
-
 
 }
 

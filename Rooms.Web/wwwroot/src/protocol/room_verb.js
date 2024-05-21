@@ -9,7 +9,7 @@ class RoomVerb {
     toString() { return decoder.decode(this.#data); }
     validate() { return RoomVerb.verify(this.#data); }
 
-    constructor(data) {
+    constructor(data = new Uint8Array(0)) {
         if (!data instanceof Uint8Array) throw new Error("Invalid data type");
         this.#data = data;
     }

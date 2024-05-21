@@ -9,7 +9,7 @@ class RoomCount {
     toString() { return decoder.decode(this.#data); }
     validate() { return RoomCount.verify(this.#data); }
 
-    constructor(data) {
+    constructor(data = new Uint8Array(0)) {
         if (typeof (data) === "number") {
             if (data < 0) throw Error("Negative values are not allowed");
             data = encoder.encode(data.toString());
