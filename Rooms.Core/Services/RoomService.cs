@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -16,6 +17,7 @@ namespace KolibSoft.Rooms.Core.Services
         public RoomServiceOptions Options { get; private set; }
         public TextWriter? Logger { get; set; }
         public bool IsRunning => _running;
+        protected IEnumerable<MessageContext> Messages => _messages;
         protected bool IsDisposed => _disposed;
 
         protected abstract ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token);
@@ -40,8 +42,10 @@ namespace KolibSoft.Rooms.Core.Services
                     }
                     rate += message.Content.Length;
                     if (rate > Options.MaxStreamRate)
-                        await Task.Delay(TimeSpan.FromSeconds(rate / Options.MaxStreamRate));
+                        await Task.Delay(TimeSpan.FromSeconds(rate / Options.MaxStreamRate), token);
                     await OnReceiveAsync(stream, message, token);
+                    if (!Messages.Any(x => x.Message.Content == message.Content))
+                        await message.Content.DisposeAsync();
                 }
             }
             catch (Exception error)
@@ -50,7 +54,10 @@ namespace KolibSoft.Rooms.Core.Services
             }
         }
 
-        protected virtual ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token) => stream.WriteMessageAsync(message, token);
+        protected virtual async ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
+        {
+            await stream.WriteMessageAsync(message, token);
+        }
 
         public virtual void Enqueue(IRoomStream stream, RoomMessage message)
         {
@@ -68,6 +75,8 @@ namespace KolibSoft.Rooms.Core.Services
                     try
                     {
                         await OnSendAsync(context.Stream, context.Message, default);
+                        if (!Messages.Any(x => x.Message.Content == context.Message.Content))
+                            await context.Message.Content.DisposeAsync();
                     }
                     catch (Exception error)
                     {
@@ -130,7 +139,7 @@ namespace KolibSoft.Rooms.Core.Services
         private bool _running = false;
         private bool _disposed = false;
 
-        private readonly struct MessageContext
+        protected readonly struct MessageContext
         {
 
             public readonly IRoomStream Stream;
