@@ -108,7 +108,7 @@ namespace KolibSoft.Rooms.Core.Services
             }
         }
 
-        protected virtual ValueTask DisposeAsync(bool disposing)
+        protected virtual ValueTask OnDisposeAsync(bool disposing)
         {
             if (!_disposed)
             {
@@ -120,13 +120,13 @@ namespace KolibSoft.Rooms.Core.Services
 
         public async ValueTask DisposeAsync()
         {
-            await DisposeAsync(disposing: true);
+            await OnDisposeAsync(disposing: true);
             GC.SuppressFinalize(this);
         }
 
         public async void Dispose()
         {
-            await DisposeAsync(disposing: true);
+            await OnDisposeAsync(disposing: true);
             GC.SuppressFinalize(this);
         }
 

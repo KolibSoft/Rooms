@@ -55,10 +55,10 @@ namespace KolibSoft.Rooms.Tests
                 return buffer.Length;
             }
 
-            protected override async ValueTask DisposeAsync(bool disposing)
+            protected override async ValueTask OnDisposeAsync(bool disposing)
             {
                 if (disposing) await Stream.DisposeAsync();
-                await base.DisposeAsync(disposing);
+                await base.OnDisposeAsync(disposing);
             }
 
             public FileRoomStream(string path, FileMode mode) : base(new byte[1024], new byte[1024]) => Stream = new FileStream(path, mode);
