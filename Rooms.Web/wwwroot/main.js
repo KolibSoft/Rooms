@@ -1,4 +1,4 @@
-import { RoomMessage, RoomService, WebRoomSocket } from "./rooms.js";
+import {  } from "./rooms.js";
 
 const isSecure = location.protocol.startsWith("https");
 const service = new RoomService();
@@ -69,16 +69,18 @@ const iCommand = document.getElementById("iCommand");
 iCommand.disabled = true;
 iCommand.onkeyup = async function (event) {
     if (event.key === "Enter") {
-        iCommand.disabled = true;
-        let message = RoomMessage.tryParse(this.value);
-        if (message) await service.sendAsync(message);
-        else tLog.value += "< Invalid message format\n";
-        commands.push(this.value);
-        if (commands.length > 16) commands.shift();
-        commandIndex = commands.length;
-        this.value = "";
-        iCommand.disabled = false;
-        iCommand.focus()
+        /*
+         iCommand.disabled = true;
+         let message = RoomMessage.tryParse(this.value);
+         if (message) await service.sendAsync(message);
+         else tLog.value += "< Invalid message format\n";
+         commands.push(this.value);
+         if (commands.length > 16) commands.shift();
+         commandIndex = commands.length;
+         this.value = "";
+         iCommand.disabled = false;
+         iCommand.focus()
+        */
     }
     else if (event.key == "ArrowDown") {
         if (commandIndex < commands.length - 1) {
@@ -101,7 +103,7 @@ iJoin.onclick = async function () {
     await service.disconnectAsync();
     let url = new URL(server);
     url.protocol = isSecure ? "wss" : "ws";
-    
+
 };
 
 iRefresh.click();
