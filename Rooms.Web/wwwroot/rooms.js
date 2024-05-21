@@ -4,6 +4,7 @@ import { RoomChannel } from "./src/protocol/room_channel.js";
 import { RoomCount } from "./src/protocol/room_count.js";
 import { RoomMessage } from "./src/protocol/room_message.js";
 import { RoomStreamOptions } from "./src/streams/room_stream_options.js";
+import { MemoryStream } from "./src/streams/memory_stream.js";
 import { RoomStream } from "./src/streams/room_stream.js";
 import { RoomWebStream } from "./src/streams/room_web_stream.js";
 
@@ -18,6 +19,7 @@ export {
     RoomCount,
     RoomMessage,
     RoomStreamOptions,
+    MemoryStream,
     RoomStream,
     RoomWebStream
 }

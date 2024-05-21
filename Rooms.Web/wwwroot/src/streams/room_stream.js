@@ -3,6 +3,7 @@ import { RoomCount } from "../protocol/room_count.js";
 import { RoomDataUtils, encoder } from "../protocol/room_data_utils.js";
 import { RoomMessage } from "../protocol/room_message.js";
 import { RoomVerb } from "../protocol/room_verb.js";
+import { MemoryStream } from "./memory_stream.js";
 import { RoomStreamOptions } from "./room_stream_options.js";
 
 const BLANK = encoder.encode(" ");
@@ -35,6 +36,7 @@ class RoomStream {
     }
 
     async #readVerbAsync() {
+        this.#data.position = 0;
         this.#data.length = 0;
         let done = false;
         while (true) {
@@ -47,21 +49,22 @@ class RoomStream {
             if (this.#data.length + length > this.#options.maxVerbLength) throw new Error("Room verb too large");
             if (this.#position < length || done) {
                 if (this.#data.length > 0) {
-                    this.#data.push(...RoomDataUtils.slice(chunk, 0, length - 1));
-                    let verb = new RoomVerb(new Uint8Array(this.#data));
+                    await this.#data.writeAsync(RoomDataUtils.slice(chunk, 0, length - 1));
+                    let verb = new RoomVerb(this.#data.toArray());
                     return verb;
                 }
                 if (length > 0) {
-                    let verb = new RoomVerb(new Uint8Array(chunk.slice(0, length - 1)));
+                    let verb = new RoomVerb(chunk.slice(0, length - 1));
                     return verb;
                 }
                 return new RoomVerb();
             }
-            this.#data.push(...chunk);
+            await this.#data.writeAsync(chunk);
         }
     }
 
     async #readChannelAsync() {
+        this.#data.position = 0;
         this.#data.length = 0;
         let done = false;
         while (true) {
@@ -76,21 +79,22 @@ class RoomStream {
             if (this.#data.length + length > this.#options.maxChannelLength) throw new Error("Room channel too large");
             if (this.#position < length || done) {
                 if (this.#data.length > 0) {
-                    this.#data.push(...RoomDataUtils.slice(chunk, 0, length - 1));
-                    let channel = new RoomChannel(new Uint8Array(this.#data));
+                    await this.#data.writeAsync(RoomDataUtils.slice(chunk, 0, length - 1));
+                    let channel = new RoomChannel(this.#data.toArray());
                     return channel;
                 }
                 if (length > 0) {
-                    let channel = new RoomChannel(new Uint8Array(chunk.slice(0, length - 1)));
+                    let channel = new RoomChannel(chunk.slice(0, length - 1));
                     return channel;
                 }
                 return new RoomChannel();
             }
-            this.#data.push(...chunk);
+            await this.#data.writeAsync(chunk);
         }
     }
 
     async #readCountAsync() {
+        this.#data.position = 0;
         this.#data.length = 0;
         let done = false;
         while (true) {
@@ -103,17 +107,17 @@ class RoomStream {
             if (this.#data.length + length > this.#options.maxCountLength) throw new Error("Room count too large");
             if (this.#position < length || done) {
                 if (this.#data.length > 0) {
-                    this.#data.push(...RoomDataUtils.slice(chunk, 0, length - 1));
-                    let count = new RoomCount(new Uint8Array(this.#data));
+                    await this.#data.writeAsync(RoomDataUtils.slice(chunk, 0, length - 1));
+                    let count = new RoomCount(this.#data.toArray());
                     return count;
                 }
                 if (length > 0) {
-                    let count = new RoomCount(new Uint8Array(chunk.slice(0, length - 1)));
+                    let count = new RoomCount(chunk.slice(0, length - 1));
                     return count;
                 }
                 return new RoomCount();
             }
-            this.#data.push(...chunk);
+            await this.#data.writeAsync(chunk);
         }
     }
 
@@ -122,17 +126,17 @@ class RoomStream {
         let _count = parseInt(count);
         if (_count == 0) return {};
         if (_count > this.#options.maxContentLength) throw new Error("Room content too large");
-        let content = [];
+        let content = new MemoryStream();
         let index = 0;
         while (index < _count) {
             let chunk = await this.#getChunkAsync();
             if (this.#length < 1) throw new Error("Room content broken");
             let length = Math.min(chunk.length, _count - index);
-            content.push(...RoomDataUtils.slice(chunk, 0, length));
+            await content.writeAsync(RoomDataUtils.slice(chunk, 0, length));
             index += length;
             this.#position += length;
         }
-        return new Uint8Array(content);
+        return content.toArray();
     }
 
     async readMessageAsync() {
@@ -236,7 +240,7 @@ class RoomStream {
         this.#options = new RoomStreamOptions(args?.options);
         this.#readBuffer = args?.readBuffer ?? new Uint8Array(this.#options.readBuffering);
         this.#writeBuffer = args?.writeBuffer ?? new Uint8Array(this.#options.writeBuffering);
-        this.#data = [];
+        this.#data = new MemoryStream();
         this.#position = 0;
         this.#length = 0;
         this.#disposed = false;
