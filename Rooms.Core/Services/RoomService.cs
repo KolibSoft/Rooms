@@ -15,7 +15,7 @@ namespace KolibSoft.Rooms.Core.Services
     {
 
         public RoomServiceOptions Options { get; private set; }
-        public TextWriter? Logger { get; set; }
+        public Action<string>? Logger { get; set; }
         public bool IsRunning => _running;
         protected IEnumerable<MessageContext> Messages => _messages;
         protected bool IsDisposed => _disposed;
@@ -50,7 +50,7 @@ namespace KolibSoft.Rooms.Core.Services
             }
             catch (Exception error)
             {
-                if (Logger != null) await Logger.WriteLineAsync($"Error receiving message: {error}");
+                Logger?.Invoke($"Error receiving message: {error}");
             }
         }
 
@@ -80,7 +80,7 @@ namespace KolibSoft.Rooms.Core.Services
                     }
                     catch (Exception error)
                     {
-                        if (Logger != null) await Logger.WriteLineAsync($"Error sending message: {error}");
+                        Logger?.Invoke($"Error sending message: {error}");
                     }
                 }
                 else await Task.Delay(100);

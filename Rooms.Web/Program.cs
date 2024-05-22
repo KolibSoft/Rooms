@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 using KolibSoft.Rooms.Core.Protocol;
 using KolibSoft.Rooms.Core.Services;
 using KolibSoft.Rooms.Core.Streams;
@@ -41,7 +42,10 @@ public class RoomsController : ControllerBase
                 });
                 return BadRequest();
             }
-            var info = await message.Content.ReadAsJsonAsync<RoomInfo>() ?? new RoomInfo();
+            var info = await message.Content.ReadAsJsonAsync<RoomInfo>(new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new RoomInfo();
+            info.Name = info.Name.Trim();
+            info.Tag = info.Tag?.Trim();
+            info.Password = info.Password?.Trim();
             var room = Rooms.FirstOrDefault(x => x.Info.Name == info.Name);
             if (room == null)
             {

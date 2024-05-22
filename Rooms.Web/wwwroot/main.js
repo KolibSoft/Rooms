@@ -1,8 +1,51 @@
-import { RoomMessage, RoomWebStream, decoder, encoder } from "./rooms.js";
+import { RoomMessage, RoomService, RoomWebStream, decoder, encoder } from "./rooms.js";
+
+class RoomClient extends RoomService {
+
+    #stream;
+
+    async onReceiveAsync(stream, message) {
+        if (this.onreceive) this.onreceive({ stream, message });
+    }
+
+    async listenAsync(stream) {
+        if (this.#stream != null) throw new Error("Stream already listening");
+        this.#stream = stream;
+        await super.listenAsync(stream);
+        this.#stream = null;
+    }
+
+    enqueue(stream, message) {
+        if (this.#stream != stream) throw new Error("Stream already listening");
+        super.enqueue(stream, message);
+    }
+
+    send(message) {
+        if (this.#stream == null) throw new Error("Stream no listening");
+        this.enqueue(this.#stream, message);
+    }
+
+    onStart() {
+        super.onStart();
+        console.log("Client started");
+    }
+
+    onStop() {
+        super.onStop();
+        console.log("Client stopped");
+    }
+
+    constructor() {
+        super();
+        this.onreceive = null;
+    }
+
+}
 
 const isSecure = location.protocol.startsWith("https");
-// const service = new RoomService();
-// service.logger = message => console.log(message);
+const client = new RoomClient();
+client.logger = message => console.error(message);
+let socket = null;
 
 let rooms = [];
 let hint = "";
@@ -30,7 +73,7 @@ iRefresh.onclick = async function () {
         dList.innerHTML = "";
         for (let room of rooms) {
             let span = document.createElement("span");
-            span.innerHTML = `${room.name} ${room.count}/${room.slots} (${room.hasPassword ? "RPIVATE" : "PUBLIC"}) [${room.tag ?? ""}]`;
+            span.innerHTML = `${room.name} ${room.count}/${room.slots} (${room.hasPassword ? "PRIVATE" : "PUBLIC"}) [${room.tag ?? ""}]`;
             dList.append(span);
         }
     } catch { }
@@ -69,18 +112,26 @@ const iCommand = document.getElementById("iCommand");
 iCommand.disabled = true;
 iCommand.onkeyup = async function (event) {
     if (event.key === "Enter") {
-        /*
-         iCommand.disabled = true;
-         let message = RoomMessage.tryParse(this.value);
-         if (message) await service.sendAsync(message);
-         else tLog.value += "< Invalid message format\n";
-         commands.push(this.value);
-         if (commands.length > 16) commands.shift();
-         commandIndex = commands.length;
-         this.value = "";
-         iCommand.disabled = false;
-         iCommand.focus()
-        */
+        iCommand.disabled = true;
+        try {
+            let parts = this.value.split(' ');
+            var message = new RoomMessage({
+                verb: parts[0],
+                channel: parseInt(parts[1]),
+                content: encoder.encode(parts.slice(2).join(' '))
+            });
+            client.send(message);
+            tLog.value += `> ${this.value}\n`;
+            commands.push(this.value);
+            if (commands.length > 16) commands.shift();
+            commandIndex = commands.length;
+        } catch (error) {
+            tLog.value += "< Invalid message format\n";
+            console.error(error);
+        }
+        this.value = "";
+        iCommand.disabled = false;
+        iCommand.focus()
     }
     else if (event.key == "ArrowDown") {
         if (commandIndex < commands.length - 1) {
@@ -100,23 +151,42 @@ iCommand.onkeyup = async function (event) {
 
 const iJoin = document.getElementById("iJoin");
 iJoin.onclick = async function () {
-    // await service.disconnectAsync();
+    iJoin.disabled = true;
+    iCommand.disabled = true;
+    socket?.close();
+    while (client.isRunning) await new Promise(resolve => setTimeout(resolve, 100));
     let url = new URL(server);
     url.protocol = isSecure ? "wss" : "ws";
-
-    let socket = new WebSocket(url);
-    socket.onerror = event => console.log(event);
+    socket = new WebSocket(url);
+    socket.onerror = event => {
+        console.error("Can not connect");
+        iJoin.disabled = false;
+    }
     socket.onopen = async event => {
         let stream = new RoomWebStream({ socket });
         await stream.writeMessageAsync(new RoomMessage({
             verb: "OPTIONS",
-            content: encoder.encode("{}")
+            content: encoder.encode(JSON.stringify({
+                name: iName.value,
+                tag: iTag.value,
+                password: iPassword.value,
+                slots: parseInt(iSlots.value)
+            }))
         }));
-        var message = await stream.readMessageAsync();
+        let message = await stream.readMessageAsync();
         console.log(message);
-        console.log(decoder.decode(message.content));
+        iJoin.disabled = false;
+        iCommand.disabled = false;
+        iRefresh.click();
+        if (!client.isRunning) client.start();
+        await client.listenAsync(stream);
+        socket.close();
+        if (client.isRunning) client.stop();
     }
+};
 
+client.onreceive = async function (event) {
+    tLog.value += `[${event.message.channel}] ${event.message.verb}: ${decoder.decode(event.message.content)}\n`;
 };
 
 iRefresh.click();

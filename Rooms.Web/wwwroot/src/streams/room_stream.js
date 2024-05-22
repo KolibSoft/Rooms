@@ -140,7 +140,7 @@ class RoomStream {
     }
 
     async readMessageAsync() {
-        if (this.#disposed) throw new Error("RoomStream disposed");
+        if (this.#disposed) throw new Error("RoomStream was disposed");
         let verb = await this.#readVerbAsync();
         let channel = await this.#readChannelAsync();
         let content = await this.#readContentAsync();
@@ -212,7 +212,7 @@ class RoomStream {
 
     async writeMessageAsync(message) {
         if (!(message instanceof RoomMessage)) throw new Error("Invalid argument");
-        if (this.#disposed) throw new Error("RoomStream disposed");
+        if (this.#disposed) throw new Error("RoomStream was disposed");
         let verb = RoomVerb.parse(message.verb);
         let channel = new RoomChannel(message.channel);
         let content = message.content;
@@ -224,14 +224,14 @@ class RoomStream {
     async onDisposeAsync(disposing) {
         if (!this.#disposed) {
             if (disposing)
-                _data.length = 0;
+                this.#data.length = 0;
             this.#readBuffer = null;
             this.#writeBuffer = null;
             this.#disposed = true;
         }
     }
 
-    dispose() { _ = this.onDisposeAsync(true); }
+    dispose() { let _ = this.onDisposeAsync(true); }
     async disposeAsync() { await this.onDisposeAsync(true); }
 
     constructor(args = { readBuffer: null, writeBuffer: null, options: null }) {

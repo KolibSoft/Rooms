@@ -2,15 +2,16 @@ import { RoomStream } from "./room_stream.js";
 
 class RoomWebStream extends RoomStream {
 
-    /** @type {WebSocket} */
     #socket;
 
     get socket() { return this.#socket; }
+    get isAlive() { return this.#socket.readyState == WebSocket.OPEN; }
 
     async readAsync(chunk) {
         if (this.#socket.readyState != WebSocket.OPEN) return 0;
         let count = await new Promise((resolve, reject) => {
-            this.socket.onerror = event => reject("Error reading payload");
+            this.#socket.onerror = event => reject("Error reading payload");
+            this.#socket.onclose = event => resolve(0);
             this.#socket.onmessage = event => {
                 let data = new Uint8Array(event.data);
                 if (chunk.length < data.length)

@@ -7,8 +7,7 @@ import { RoomStreamOptions } from "./src/streams/room_stream_options.js";
 import { MemoryStream } from "./src/streams/memory_stream.js";
 import { RoomStream } from "./src/streams/room_stream.js";
 import { RoomWebStream } from "./src/streams/room_web_stream.js";
-
-async function delay(ms) { await new Promise(resolve => setTimeout(resolve, ms)); }
+import { RoomService } from "./src/services/room_service.js";
 
 export {
     decoder,
@@ -21,5 +20,6 @@ export {
     RoomStreamOptions,
     MemoryStream,
     RoomStream,
-    RoomWebStream
+    RoomWebStream,
+    RoomService
 }

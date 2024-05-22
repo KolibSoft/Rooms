@@ -27,7 +27,7 @@ if (mode == "Server")
     {
         var endpoint = await args.GetIPEndpointAsync("endpoint", new IPEndPoint(IPAddress.Any, 55000));
         Console.WriteLine($"Using endpoint: {endpoint}");
-        using var server = new RoomServer(_settings?.ServiceOptions) { Logger = Console.Error };
+        using var server = new RoomServer(_settings?.ServiceOptions) { Logger = Console.Error.WriteLine };
         server.Start();
         using var listener = new TcpListener(endpoint!);
         CommandServer(server);
@@ -37,7 +37,7 @@ if (mode == "Server")
     {
         var uri = await args.GetUriAsync("uri", new Uri("http://localhost:55000/"));
         Console.WriteLine($"Using uri: {uri}");
-        using var server = new RoomServer(_settings?.ServiceOptions) { Logger = Console.Error };
+        using var server = new RoomServer(_settings?.ServiceOptions) { Logger = Console.Error.WriteLine };
         server.Start();
         using var listener = new HttpListener();
         listener.Prefixes.Add(uri!.ToString());
@@ -51,7 +51,7 @@ else if (mode == "Client")
     {
         var endpoint = await args.GetIPEndpointAsync("endpoint", new IPEndPoint(IPAddress.Loopback, 55000));
         Console.WriteLine($"Using endpoint: {endpoint}");
-        using var client = new RoomClient(_settings?.ServiceOptions) { Logger = Console.Error };
+        using var client = new RoomClient(_settings?.ServiceOptions) { Logger = Console.Error.WriteLine };
         client.Start();
         using var _client = new TcpClient();
         await _client.ConnectAsync(endpoint!);
@@ -64,7 +64,7 @@ else if (mode == "Client")
     {
         var uri = await args.GetUriAsync("uri", new Uri("ws://localhost:55000/"));
         Console.WriteLine($"Using uri: {uri}");
-        using var client = new RoomClient(_settings?.ServiceOptions) { Logger = Console.Error };
+        using var client = new RoomClient(_settings?.ServiceOptions) { Logger = Console.Error.WriteLine };
         client.Start();
         using var _client = new ClientWebSocket();
         await _client.ConnectAsync(uri!, default);
