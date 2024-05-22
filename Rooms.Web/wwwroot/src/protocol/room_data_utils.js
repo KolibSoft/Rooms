@@ -65,8 +65,8 @@ class RoomDataUtils {
     }
 
     static slice(data, index, length = null) {
-        if (data instanceof Uint8Array) return data.subarray(index, length ? index + length : data.length);
-        if (typeof (data) === "string") return data.substring(index, length ? index + length : data.length);
+        if (data instanceof Uint8Array) return data.subarray(index, length != null ? index + length : data.length);
+        if (typeof (data) === "string") return data.substring(index, length != null ? index + length : data.length);
         throw new Error("Unsupported data type");
     }
 

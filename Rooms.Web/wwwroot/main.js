@@ -122,6 +122,7 @@ iCommand.onkeyup = async function (event) {
             });
             client.send(message);
             tLog.value += `> ${this.value}\n`;
+            tLog.scrollTop = tLog.scrollHeight;
             commands.push(this.value);
             if (commands.length > 16) commands.shift();
             commandIndex = commands.length;
@@ -163,6 +164,7 @@ iJoin.onclick = async function () {
         iJoin.disabled = false;
     }
     socket.onopen = async event => {
+        tLog.value = "Joined\n";
         let stream = new RoomWebStream({ socket });
         await stream.writeMessageAsync(new RoomMessage({
             verb: "OPTIONS",
@@ -182,11 +184,13 @@ iJoin.onclick = async function () {
         await client.listenAsync(stream);
         socket.close();
         if (client.isRunning) client.stop();
+        tLog.value += "Left\n";
     }
 };
 
 client.onreceive = async function (event) {
     tLog.value += `[${event.message.channel}] ${event.message.verb}: ${decoder.decode(event.message.content)}\n`;
+    tLog.scrollTop = tLog.scrollHeight;
 };
 
 iRefresh.click();
