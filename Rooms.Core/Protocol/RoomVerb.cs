@@ -1,184 +1,65 @@
 using System;
-using System.Linq;
 using System.Text;
 
 namespace KolibSoft.Rooms.Core.Protocol
 {
 
-    /// <summary>
-    /// Represents a variable length verb value.
-    /// </summary>
     public readonly struct RoomVerb
     {
 
-        /// <summary>
-        /// Internal data.
-        /// </summary>
-        private readonly ArraySegment<byte> data;
+        public ReadOnlyMemory<byte> Data => _data;
+        public int Length => _data.Count;
+        public override string ToString() => $"{Encoding.UTF8.GetString(_data)}";
+        public bool Validate() => Verify(_data);
+        public RoomVerb(ArraySegment<byte> data) => _data = data;
+        private readonly ArraySegment<byte> _data;
 
-        /// <summary>
-        /// Internal data.
-        /// </summary>
-        public ReadOnlySpan<byte> Data => data;
-
-        /// <summary>
-        /// Length in bytes.
-        /// </summary>
-        public int Length => data.Count;
-
-        public override string ToString() => Encoding.UTF8.GetString(data);
-
-        public override int GetHashCode() => data.GetHashCode();
-
-        public override bool Equals(object? obj)
+        public static bool Verify(ReadOnlySpan<byte> data)
         {
-            var result = (obj is RoomVerb verb) && this == verb;
-            return result;
+            if (data.Length < 1) return false;
+            var index = data.ScanWord();
+            return index == data.Length;
         }
 
-        /// <summary>
-        /// Verify if the current data is a valid verb data.
-        /// </summary>
-        /// <returns></returns>
-        public bool Validate() => Verify(data);
-
-        /// <summary>
-        /// Constructs a new verb without validate its data.
-        /// </summary>
-        /// <param name="data">Verb data.</param>
-        public RoomVerb(ArraySegment<byte> data)
+        public static bool Verify(ReadOnlySpan<char> data)
         {
-            this.data = data;
+            if (data.Length < 1) return false;
+            var index = data.ScanWord();
+            return index == data.Length;
         }
 
-        public static bool operator ==(RoomVerb lhs, RoomVerb rhs)
+        public static bool TryParse(ReadOnlySpan<byte> data, out RoomVerb verb)
         {
-            var result = lhs.data.SequenceEqual(rhs.data);
-            return result;
-        }
-
-        public static bool operator !=(RoomVerb lhs, RoomVerb rhs)
-        {
-            var result = !lhs.data.SequenceEqual(rhs.data);
-            return result;
-        }
-
-        /// <summary>
-        /// Checks if a sequence starts with a valid verb data.
-        /// </summary>
-        /// <param name="utf8">Sequence to check.</param>
-        /// <returns>The length of the found verb data.</returns>
-        public static int Scan(ReadOnlySpan<byte> utf8)
-        {
-            var index = 0;
-            while (index < utf8.Length && lookup(utf8[index]))
-                index++;
-            return index;
-            static bool lookup(int c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
-        }
-
-        /// <summary>
-        /// Checks if a sequence starts with a valid verb data.
-        /// </summary>
-        /// <param name="chars">Sequence to check.</param>
-        /// <returns>The length of the found verb data.</returns>
-        public static int Scan(ReadOnlySpan<char> chars)
-        {
-            var index = 0;
-            while (index < chars.Length && lookup(chars[index]))
-                index++;
-            return index;
-            static bool lookup(int c) => c == '_' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
-        }
-
-        /// <summary>
-        /// Checks if a sequence is a valid verb data.
-        /// </summary>
-        /// <param name="utf8">Sequence to check.</param>
-        /// <returns>True if is a valid verb data.</returns>
-        public static bool Verify(ReadOnlySpan<byte> utf8)
-        {
-            var result = Scan(utf8) == utf8.Length;
-            return result;
-        }
-
-        /// <summary>
-        /// Checks if a sequence is a valid verb data.
-        /// </summary>
-        /// <param name="chars">Sequence to check.</param>
-        /// <returns>True if is a valid verb data.</returns>
-        public static bool Verify(ReadOnlySpan<char> chars)
-        {
-            var result = Scan(chars) == chars.Length;
-            return result;
-        }
-
-        /// <summary>
-        /// Try to parse a sequence into a verb.
-        /// </summary>
-        /// <param name="utf8">Sequence to parse.</param>
-        /// <param name="verb">Verb representation.</param>
-        /// <returns>True if parse success.</returns>
-        public static bool TryParse(ReadOnlySpan<byte> utf8, out RoomVerb verb)
-        {
-            if (Verify(utf8))
+            if (Verify(data))
             {
-                var data = new byte[utf8.Length];
-                utf8.CopyTo(data);
-                verb = new RoomVerb(data);
+                verb = new RoomVerb(data.ToArray());
                 return true;
             }
-            else
-            {
-                verb = default;
-                return false;
-            }
+            verb = default;
+            return false;
         }
 
-        /// <summary>
-        /// Try to parse a sequence into a verb.
-        /// </summary>
-        /// <param name="chars">Sequence to parse.</param>
-        /// <param name="verb">Verb representation.</param>
-        /// <returns>True if parse success.</returns>
-        public static bool TryParse(ReadOnlySpan<char> chars, out RoomVerb verb)
+        public static bool TryParse(ReadOnlySpan<char> data, out RoomVerb verb)
         {
-            if (Verify(chars))
+            if (Verify(data))
             {
-                var data = new byte[Encoding.UTF8.GetByteCount(chars)];
-                Encoding.UTF8.GetBytes(chars, data);
-                verb = new RoomVerb(data);
+                verb = new RoomVerb(Encoding.UTF8.GetBytes(new string(data)));
                 return true;
             }
-            else
-            {
-                verb = default;
-                return false;
-            }
+            verb = default;
+            return false;
         }
 
-        /// <summary>
-        /// Parse a sequence into a verb.
-        /// </summary>
-        /// <param name="utf8">Sequence to parse.</param>
-        /// <returns>Verb representation.</returns>
-        /// <exception cref="FormatException">If the sequence is an invalid verb data.</exception>
-        public static RoomVerb Parse(ReadOnlySpan<byte> utf8)
+        public static RoomVerb Parse(ReadOnlySpan<byte> data)
         {
-            if (TryParse(utf8, out RoomVerb verb)) return verb;
-            throw new FormatException($"Invalid verb format: {Encoding.UTF8.GetString(utf8)}");
+            if (TryParse(data, out RoomVerb verb)) return verb;
+            throw new FormatException($"Room verb format is incorrect: {Encoding.UTF8.GetString(data)}");
         }
 
-        /// <summary>
-        /// Parse a sequence into a verb.
-        /// </summary>
-        /// <param name="chars">Sequence to parse.</param>
-        /// <returns>Verb representation.</returns>
-        /// <exception cref="FormatException">If the sequence is an invalid verb data.</exception>
-        public static RoomVerb Parse(ReadOnlySpan<char> chars)
+        public static RoomVerb Parse(ReadOnlySpan<char> data)
         {
-            if (TryParse(chars, out RoomVerb verb)) return verb;
-            throw new FormatException($"Invalid verb format: {new string(chars)}");
+            if (TryParse(data, out RoomVerb verb)) return verb;
+            throw new FormatException($"Room verb format is incorrect: {new string(data)}");
         }
 
     }

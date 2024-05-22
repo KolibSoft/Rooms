@@ -3,249 +3,155 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Net.WebSockets;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using KolibSoft.Rooms.Core.Protocol;
-using KolibSoft.Rooms.Core.Sockets;
+using KolibSoft.Rooms.Core.Streams;
 
 namespace KolibSoft.Rooms.Core.Services
 {
-
-    /// <summary>
-    /// Base class to implement Room services.
-    /// </summary>
-    public class RoomService : IDisposable
+    public abstract class RoomService : IRoomService
     {
 
-        /// <summary>
-        /// Dipose flag.
-        /// </summary>
-        private bool disposed;
+        public RoomServiceOptions Options { get; private set; }
+        public Action<string>? Logger { get; set; }
+        public bool IsRunning => _running;
+        protected IEnumerable<MessageContext> Messages => _messages;
+        protected bool IsDisposed => _disposed;
 
-        /// <summary>
-        /// Available connector implementations.
-        /// </summary>
-        public Dictionary<string, RoomConnector> Connectors { get; }
+        protected abstract ValueTask OnReceiveAsync(IRoomStream stream, RoomMessage message, CancellationToken token);
 
-        /// <summary>
-        /// Current working socket.
-        /// </summary>
-        public IRoomSocket? Socket { get; private set; }
-
-        /// <summary>
-        /// Checks if the underlying socket is alive.
-        /// </summary>
-        public bool IsOnline => Socket?.IsAlive == true;
-
-        /// <summary>
-        /// Writer to report errors.
-        /// </summary>
-        public TextWriter? Logger { get; set; }
-
-        /// <summary>
-        /// Connect to a Room server using the specific implementation.
-        /// </summary>
-        /// <param name="connstring">Implementation specific connection string.</param>
-        /// <param name="impl">Implementation identifier.</param>
-        /// <param name="rating">Max amount of bytes received per second.</param>
-        /// <returns></returns>
-        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
-        public async Task ConnectAsync(string connstring, string impl, int rating = 1024)
+        public virtual async ValueTask ListenAsync(IRoomStream stream, CancellationToken token = default)
         {
-            if (disposed) throw new ObjectDisposedException(null);
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
+            if (!_running) throw new InvalidOperationException("Service not running");
             try
             {
-                await DisconnectAsync();
-                var connector = Connectors[impl];
-                if (connector != null)
+                var ttl = TimeSpan.FromSeconds(1);
+                var stopwatch = new Stopwatch();
+                var rate = 0L;
+                stopwatch.Start();
+                while (_running && stream.IsAlive)
                 {
-                    Socket = await connector.Invoke(connstring);
-                    _ = ListenAsync(Socket, rating);
-                }
-            }
-            catch (Exception error)
-            {
-                if (Logger != null) await Logger.WriteLineAsync($"Room Service error: {error}");
-            }
-        }
-
-        /// <summary>
-        /// Disconnects from the server.
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
-        public async Task DisconnectAsync()
-        {
-            if (disposed) throw new ObjectDisposedException(null);
-            try
-            {
-                Socket?.Dispose();
-            }
-            catch (Exception error)
-            {
-                if (Logger != null) await Logger.WriteLineAsync($"Room Service error: {error}");
-            }
-        }
-
-        /// <summary>
-        /// Called after open a connection.
-        /// </summary>
-        /// <param name="socket"></param>
-        protected virtual void OnOnline(IRoomSocket socket) { }
-
-        /// <summary>
-        /// Called after receive a message.
-        /// </summary>
-        /// <param name="message"></param>
-        protected virtual void OnMessageReceived(RoomMessage message) { }
-
-        /// <summary>
-        /// Called after close a connection.
-        /// </summary>
-        /// <param name="socket"></param>
-        protected virtual void OnOffline(IRoomSocket socket) { }
-
-        /// <summary>
-        /// Start listen the socket incoming messages.
-        /// </summary>
-        /// <param name="socket">Socket to listen.</param>
-        /// <param name="rating">Max amount of bytes received per second.</param>
-        /// <returns></returns>
-        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
-        private async Task ListenAsync(IRoomSocket socket, int rating = 1024)
-        {
-            OnOnline(socket);
-            if (disposed) throw new ObjectDisposedException(null);
-            var message = new RoomMessage();
-            var ttl = TimeSpan.FromSeconds(1);
-            var stopwatch = new Stopwatch();
-            var rate = 0;
-            stopwatch.Start();
-            while (socket.IsAlive)
-            {
-                try
-                {
-                    await socket.ReceiveAsync(message);
-                    rate += message.Length;
-                    if (rate > rating)
-                    {
-                        socket.Dispose();
-                        break;
-                    }
+                    var message = await stream.ReadMessageAsync(token);
                     if (stopwatch.Elapsed >= ttl)
                     {
                         rate = 0;
                         stopwatch.Restart();
                     }
-                    OnMessageReceived(message);
-                }
-                catch (Exception error)
-                {
-                    if (Logger != null) await Logger.WriteLineAsync($"Room Service error: {error}");
+                    rate += message.Content.Length;
+                    if (rate > Options.MaxStreamRate)
+                        await Task.Delay(TimeSpan.FromSeconds(rate / Options.MaxStreamRate), token);
+                    await OnReceiveAsync(stream, message, token);
+                    if (!Messages.Any(x => x.Message.Content == message.Content))
+                        await message.Content.DisposeAsync();
                 }
             }
-            OnOffline(socket);
-        }
-
-        /// <summary>
-        /// Called after send a message.
-        /// </summary>
-        /// <param name="message"></param>
-        protected virtual void OnMessageSent(RoomMessage message) { }
-
-        /// <summary>
-        /// Send a message.
-        /// </summary>
-        /// <param name="message">Message to send.</param>
-        /// <returns></returns>
-        /// <exception cref="ObjectDisposedException">If the service was disposed.</exception>
-        public async Task SendAsync(RoomMessage message)
-        {
-            if (disposed) throw new ObjectDisposedException(null);
-            if (Socket != null)
-                try
-                {
-                    await Socket.SendAsync(message);
-                    OnMessageSent(message);
-                }
-                catch (Exception error)
-                {
-                    if (Logger != null) await Logger.WriteLineAsync($"Room Service error: {error}");
-                }
-        }
-
-        /// <summary>
-        /// Internal dispose implementation.
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposed)
+            catch (Exception error)
             {
-                if (disposing) Socket?.Dispose();
-                disposed = true;
+                Logger?.Invoke($"Error receiving message: {error}");
             }
         }
 
-        public void Dispose()
+        protected virtual async ValueTask OnSendAsync(IRoomStream stream, RoomMessage message, CancellationToken token)
         {
-            Dispose(disposing: true);
+            await stream.WriteMessageAsync(message, token);
+        }
+
+        public virtual void Enqueue(IRoomStream stream, RoomMessage message)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
+            if (!_running) throw new InvalidOperationException("Service not running");
+            _messages = _messages.Enqueue(new MessageContext(stream, message));
+        }
+
+        private async void Transmit()
+        {
+            while (_running)
+                if (_messages.Any())
+                {
+                    _messages = _messages.Dequeue(out MessageContext context);
+                    try
+                    {
+                        await OnSendAsync(context.Stream, context.Message, default);
+                        if (!Messages.Any(x => x.Message.Content == context.Message.Content))
+                            await context.Message.Content.DisposeAsync();
+                    }
+                    catch (Exception error)
+                    {
+                        Logger?.Invoke($"Error sending message: {error}");
+                    }
+                }
+                else await Task.Delay(100);
+        }
+
+        protected virtual void OnStart() => Transmit();
+        public void Start()
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
+            if (!_running)
+            {
+                _running = true;
+                OnStart();
+            }
+        }
+
+        protected virtual void OnStop() { }
+        public void Stop()
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(RoomService));
+            if (_running)
+            {
+                _running = false;
+                OnStop();
+            }
+        }
+
+        protected virtual ValueTask OnDisposeAsync(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _running = false;
+                _disposed = true;
+            }
+            return ValueTask.CompletedTask;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await OnDisposeAsync(disposing: true);
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// Constructs a default service.
-        /// </summary>
-        public RoomService()
+        public async void Dispose()
         {
-            Connectors = new Dictionary<string, RoomConnector>
-            {
-                [TCP] = TcpConnector,
-                [WEB] = WebConnector
-            };
+            await OnDisposeAsync(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// TCP implementation identifier.
-        /// </summary>
-        public const string TCP = "TCP";
-
-        /// <summary>
-        /// WEB implementatuon identifier.
-        /// </summary>
-        public const string WEB = "WEB";
-
-        /// <summary>
-        /// Default TCP implementation connector.
-        /// </summary>
-        public static readonly RoomConnector TcpConnector = async (connstring) =>
+        protected RoomService(RoomServiceOptions? options = null)
         {
-            connstring = connstring.Replace("localhost", "127.0.0.1");
-            var cancellation = new CancellationTokenSource();
-            cancellation.CancelAfter(TimeSpan.FromMinutes(1.0));
-            var endpoint = IPEndPoint.Parse(connstring);
-            var client = new TcpClient();
-            await client.ConnectAsync(endpoint.Address, endpoint.Port, cancellation.Token);
-            return new TcpRoomSocket(client);
-        };
+            Options = options ?? new RoomServiceOptions();
+        }
 
-        /// <summary>
-        /// Default WEB implementation connector.
-        /// </summary>
-        public static readonly RoomConnector WebConnector = async (connstring) =>
+        private ImmutableQueue<MessageContext> _messages = ImmutableQueue.Create<MessageContext>();
+        private bool _running = false;
+        private bool _disposed = false;
+
+        protected readonly struct MessageContext
         {
-            var cancellation = new CancellationTokenSource();
-            cancellation.CancelAfter(TimeSpan.FromMinutes(1.0));
-            var uri = new Uri(connstring);
-            var client = new ClientWebSocket();
-            client.Options.AddSubProtocol(WebRoomSocket.SubProtocol);
-            await client.ConnectAsync(uri, cancellation.Token);
-            return new WebRoomSocket(client);
-        };
+
+            public readonly IRoomStream Stream;
+            public readonly RoomMessage Message;
+
+            public MessageContext(IRoomStream stream, RoomMessage message)
+            {
+                Stream = stream;
+                Message = message;
+            }
+
+        }
 
     }
-
 }
