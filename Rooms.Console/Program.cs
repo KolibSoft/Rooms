@@ -74,7 +74,9 @@ else if (mode == "Client")
         await client.ListenAsync(stream);
     }
 }
-
+await Task.Delay(100);
+Console.Write($"Press a key to exit...");
+Console.ReadKey();
 return;
 
 static async Task ListenTcpAsync(RoomServer server, TcpListener listener, Settings? settings = null)
